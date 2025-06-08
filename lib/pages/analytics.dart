@@ -158,13 +158,13 @@ class _DevicesState extends State<Devices> {
       );
 
       if (response.statusCode == 200) {
-        showCustomSnackBar(context, "Report Sent Succesfully!");
+        showCustomSnackBarDone(context, "Report Sent Succesfully!");
         print("Response: ${response.body}");
       } else {
         throw Exception("Failed to send report. Status code: ${response.statusCode}");
       }
     } catch (e) {
-      showCustomSnackBar(context, "Faild to send Report!");
+      showCustomSnackBarError(context, "Faild to send Report!");
     } finally {
       if (Navigator.canPop(context)) {
         Navigator.of(context).pop(); // Dismiss loading dialog
@@ -182,25 +182,42 @@ class _DevicesState extends State<Devices> {
     );
   }
 
-  Future<void> _addDevice() async {
-    final name = nameController.text.trim();
-    final id = idController.text.trim();
+Future<void> _addDevice() async {
+  final name = nameController.text.trim();
+  final id = idController.text.trim().toUpperCase(); // Make uppercase
 
-    if (name.isNotEmpty && id.isNotEmpty) {
-      print("ok");
-      final newDevice = {'name': name, 'is_on': false, 'mac': id};
+  // Regex to match MAC address format: XX:XX:XX:XX:XX:XX
+  final macRegex = RegExp(r'^([0-9A-F]{2}:){5}[0-9A-F]{2}$');
 
-      final insertedDevice =
-          await supabase.from('devices').insert(newDevice).select().single();
-
-      setState(() {
-        devices.add(insertedDevice);
-        showInputFields = false;
-        nameController.clear();
-        idController.clear();
-      });
-    }
+  if (name.isEmpty || id.isEmpty) {
+    showCustomSnackBarError(context, "Please fill all fields.");
+    return;
   }
+
+  if (!macRegex.hasMatch(id)) {
+    showCustomSnackBarError(context, "Invalid format. Use XX:XX:XX:XX:XX:XX");
+    return;
+  }
+
+  try {
+    final newDevice = {'name': name, 'is_on': false, 'mac': id};
+
+    final insertedDevice =
+        await supabase.from('devices').insert(newDevice).select().single();
+
+    setState(() {
+      devices.add(insertedDevice);
+      showInputFields = false;
+      nameController.clear();
+      idController.clear();
+    });
+
+    showCustomSnackBarDone(context, "New Device Added Successfully!");
+  } catch (e) {
+    showCustomSnackBarDone(context, "Error adding device: $e");
+  }
+}
+
 
   void _confirmAndDeleteDatabase(BuildContext context) {
     showDialog(

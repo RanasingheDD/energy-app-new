@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:myapp/pages/home_page.dart';
-import 'package:myapp/provider/ThemeProvider.dart';
-import 'package:myapp/provider/report_data_provider.dart';
 import 'package:provider/provider.dart';
+import 'provider/ThemeProvider.dart';
+import 'provider/report_data_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'pages/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

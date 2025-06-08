@@ -12,10 +12,10 @@ class CardPage extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: const Color.fromARGB(255, 4, 48, 124),
+          color: const Color.fromARGB(255, 12, 78, 192).withOpacity(0.4),
           boxShadow: const [
             BoxShadow(
-              color:Color(0xFF204952),
+              color:Color.fromARGB(255, 92, 5, 143),
               blurRadius: 5,
               spreadRadius: 2,
               offset: Offset(0, 1),

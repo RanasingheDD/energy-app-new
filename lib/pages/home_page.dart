@@ -445,11 +445,11 @@ class _HomePageState extends State<HomePage> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Icon(Icons.info, size: 35),
+                                    Icon(Icons.info, size: 25),
                                     Text(
                                       "Firmware Update \n Available",
                                       style: TextStyle(
-                                        fontSize: 20,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
                                       ),

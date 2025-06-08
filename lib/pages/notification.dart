@@ -39,7 +39,7 @@ Future<void> markUpdateAsAcknowledged() async {
         .update({'has_update': false}) 
         .eq('id', latest['id']);        
 
-    showCustomSnackBar(context, "Update Triggerd!");
+    showCustomSnackBarDone(context, "Update Triggerd!");
 
     setState(() {
       widget.hasUpdate = false;

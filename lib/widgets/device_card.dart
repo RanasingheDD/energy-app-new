@@ -180,7 +180,7 @@ Container(
   child: Switch(
     value: device['is_on'],
     onChanged: (_) => widget.onToggle(index),
-    activeThumbColor: const Color.fromARGB(255, 0, 251, 255),
+    activeColor: const Color.fromARGB(255, 0, 251, 255),
     inactiveTrackColor: Colors.white24,
   ),
 )
