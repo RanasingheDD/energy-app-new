@@ -81,22 +81,31 @@ class _SettingsPageState extends State<SettingsPage> {
                     //fontWeight: FontWeight.bold,
                   ),
                   ),
-                  IconButton(
-                    onPressed: () async {
-                      final Uri url = Uri.parse('http://192.168.4.1');
-                        await launchUrl(url, mode: LaunchMode.externalApplication);
-                    },
-                    icon: Icon(
-                      Icons.wifi_outlined,
-                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                      size: 30,
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color:themeProvider.isDarkMode ? Colors.grey : Colors.black.withOpacity(0.2),
+                      ),
+                      child: IconButton(
+                        onPressed: () async {
+                          final Uri url = Uri.parse('http://192.168.4.1');
+                            await launchUrl(url, mode: LaunchMode.externalApplication);
+                        },
+                        icon: Icon(
+                          Icons.wifi_outlined,
+                          color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                          size: 30,
+                        ),
+                      ),
                     ),
                   )
                 ],
               ),
               SizedBox(height: MediaQuery.sizeOf(
                 context
-              ).height * 0.05
+              ).height * 0.03
               )
               ,
               _buildSwitchTile(
@@ -139,20 +148,29 @@ class _SettingsPageState extends State<SettingsPage> {
                     //fontWeight: FontWeight.bold,
                   ),
                   ),
-                  IconButton(
-                      onPressed: () async {
-                        await Supabase.instance.client.auth.signOut();
-                        if (context.mounted) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => const AuthPage()),
-                          );
-                        }
-                      },
-                    icon: Icon(
-                      Icons.logout_outlined,
-                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                      size: 30,
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color:themeProvider.isDarkMode ? Colors.grey : Colors.black.withOpacity(0.2),
+                      ),
+                      child: IconButton(
+                          onPressed: () async {
+                            await Supabase.instance.client.auth.signOut();
+                            if (context.mounted) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => const AuthPage()),
+                              );
+                            }
+                          },
+                        icon: Icon(
+                          Icons.logout_outlined,
+                          color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                          size: 30,
+                        ),
+                      ),
                     ),
                   )
                 ],
@@ -199,6 +217,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Divider(color: const Color.fromRGBO(255, 255, 255, 0.302), thickness: 1),
         Text(
           'About Us',
           style: TextStyle(

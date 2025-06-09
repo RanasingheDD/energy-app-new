@@ -311,8 +311,6 @@ Future<void> _addDevice() async {
                     key: ValueKey("title"),
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
                     ),
                   )
                   : const SizedBox(height: 20),

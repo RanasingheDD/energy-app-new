@@ -64,7 +64,7 @@ class _ClimateState extends State<Climate> {
 
     return Container(
       width: double.infinity,
-      height: screenSize.height * 0.5,
+      height: screenSize.height * 0.35,
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
@@ -158,7 +158,7 @@ class _ClimateState extends State<Climate> {
                         ],
                       ),
                     ),
-                    Divider(color: Colors.white30, thickness: 1),
+                    Divider(color: const Color.fromRGBO(255, 255, 255, 0.302), thickness: 1),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,

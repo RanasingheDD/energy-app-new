@@ -5,7 +5,6 @@ import 'package:myapp/widgets/device_card.dart';
 import 'package:myapp/widgets/menu.dart';
 import 'package:myapp/widgets/wether.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required String title});
@@ -140,7 +139,6 @@ Future<void> _removeDevice(int index) async {
 
   final userId = Supabase.instance.client.auth.currentUser?.id;
   if (userId == null) {
-    print('User is not logged in.');
     return;
   }
 
@@ -155,7 +153,6 @@ Future<void> _removeDevice(int index) async {
       devices.removeAt(index);
     });
   } catch (e) {
-    print('Error deleting device: $e');
   }
 }
 
@@ -165,13 +162,11 @@ Future<void> _togglePower(int index) async {
   final userId = Supabase.instance.client.auth.currentUser?.id;
 
   if (userId == null) {
-    print('User is not logged in.');
     return;
   }
 
   final deviceId = device['id'];
   if (deviceId == null) {
-    print('Device ID is null for device at index $index');
     return;
   }
 
@@ -188,7 +183,6 @@ Future<void> _togglePower(int index) async {
       devices[index]['is_on'] = newState;
     });
   } catch (e) {
-    print('Error updating device: $e');
   }
 }
 
