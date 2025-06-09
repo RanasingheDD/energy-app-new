@@ -184,9 +184,8 @@ class _DevicesState extends State<Devices> {
 
 Future<void> _addDevice() async {
   final name = nameController.text.trim();
-  final id = idController.text.trim().toUpperCase(); // Make uppercase
+  final id = idController.text.trim().toUpperCase(); // MAC uppercase
 
-  // Regex to match MAC address format: XX:XX:XX:XX:XX:XX
   final macRegex = RegExp(r'^([0-9A-F]{2}:){5}[0-9A-F]{2}$');
 
   if (name.isEmpty || id.isEmpty) {
@@ -200,10 +199,25 @@ Future<void> _addDevice() async {
   }
 
   try {
-    final newDevice = {'name': name, 'is_on': false, 'mac': id};
+    final userId = Supabase.instance.client.auth.currentUser?.id;
 
-    final insertedDevice =
-        await supabase.from('devices').insert(newDevice).select().single();
+    if (userId == null) {
+      showCustomSnackBarError(context, "User not logged in.");
+      return;
+    }
+
+    final newDevice = {
+      'name': name,
+      'mac': id,
+      'is_on': false,
+      'user_id': userId, // Link device to the user
+    };
+
+    final insertedDevice = await supabase
+        .from('devices')
+        .insert(newDevice)
+        .select()
+        .single();
 
     setState(() {
       devices.add(insertedDevice);
@@ -214,7 +228,7 @@ Future<void> _addDevice() async {
 
     showCustomSnackBarDone(context, "New Device Added Successfully!");
   } catch (e) {
-    showCustomSnackBarDone(context, "Error adding device: $e");
+    showCustomSnackBarError(context, "Error adding device: $e");
   }
 }
 

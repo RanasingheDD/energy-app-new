@@ -88,55 +88,106 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _fetchDevices() async {
-    final response = await supabase.from('devices').select();
+Future<void> registerUser(String email, String password) async {
+  try {
+
+      final user = Supabase.instance.client.auth.currentUser;
+      print(user);
+    if (user != null) {
+      print("✅ Registration successful! User ID: ${user.id}");
+    } else {
+      print("⚠️ Sign-up request sent. Please check your email to confirm.");
+    }
+  } on AuthException catch (e) {
+    print("❌ Auth error: ${e.message}");
+  } catch (e) {
+    print("❌ Unexpected error: $e");
+  }
+}
+
+
+
+Future<void> _fetchDevices() async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+
+  if (userId == null) {
+    print("User not logged in");
+    return;
+  }
+
+  try {
+    final response = await supabase
+        .from('devices')
+        .select()
+        .eq('user_id', userId); // Filter by user ID
 
     setState(() {
       devices = List<Map<String, dynamic>>.from(response);
     });
+  } catch (e) {
+    print("Error fetching devices: $e");
+  }
+}
+
+
+Future<void> _removeDevice(int index) async {
+  final device = devices[index];
+  final deviceId = device['id']; 
+
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) {
+    print('User is not logged in.');
+    return;
   }
 
-  Future<void> _addDevice() async {
-    final name = nameController.text.trim();
-    final id = idController.text.trim();
+  try {
+    await supabase
+        .from('devices')
+        .delete()
+        .eq('id', deviceId)
+        .eq('user_id', userId); // userId is non-null here
 
-    if (name.isNotEmpty && id.isNotEmpty) {
-      print("ok");
-      final newDevice = {'name': name, 'is_on': false, 'mac': id};
-
-      final insertedDevice =
-          await supabase.from('devices').insert(newDevice).select().single();
-
-      setState(() {
-        devices.add(insertedDevice);
-        showInputFields = false;
-        nameController.clear();
-        idController.clear();
-      });
-    }
-  }
-
-  Future<void> _removeDevice(int index) async {
-    final device = devices[index];
-    await supabase.from('devices').delete().eq('name', device['name']);
     setState(() {
       devices.removeAt(index);
     });
+  } catch (e) {
+    print('Error deleting device: $e');
+  }
+}
+
+
+Future<void> _togglePower(int index) async {
+  final device = devices[index];
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+
+  if (userId == null) {
+    print('User is not logged in.');
+    return;
   }
 
-  Future<void> _togglePower(int index) async {
-    final device = devices[index];
-    final newState = !device['is_on'];
+  final deviceId = device['id'];
+  if (deviceId == null) {
+    print('Device ID is null for device at index $index');
+    return;
+  }
 
+  final newState = !(device['is_on'] ?? false);
+
+  try {
     await supabase
         .from('devices')
         .update({'is_on': newState})
-        .eq('device_id', device['device_id']);
+        .eq('id', deviceId)
+        .eq('user_id', userId);
 
     setState(() {
       devices[index]['is_on'] = newState;
     });
+  } catch (e) {
+    print('Error updating device: $e');
   }
+}
+
 
   Future<void> fetchUpdateStatus() async {
     final response =
@@ -175,40 +226,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 21, 17, 37),
       key: _scaffoldKey,
-      /*appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(50),
-              color:const Color.fromARGB(255, 21, 17, 37),
-            ),
-            child: IconButton(
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              icon: const Icon(Icons.menu, color: Colors.white),
-              splashRadius: 20,
-            ),
-          ),
-        ),
-        title: Text(
-          'Devices',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor:const Color.fromARGB(255, 21, 17, 37),
-        actions: [
-          IconButton(
-            icon: Icon(
-              showInputFields ? Icons.close : Icons.add,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              setState(() {
-                showInputFields = !showInputFields;
-              });
-            },
-          ),
-        ],
-      ),*/
       drawer: Drawer(
         child: SideMenuWidget(
           currentIndex: 0,
@@ -225,37 +242,6 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (showInputFields)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: nameController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: const InputDecoration(
-                            labelText: 'Device Name',
-                            labelStyle: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: idController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: const InputDecoration(
-                            labelText: 'Device ID',
-                            labelStyle: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.check, color: Colors.green),
-                        onPressed: _addDevice,
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: 16),
                 Stack(
                   children: [
                     Climate(weatherService: weatherService),
@@ -488,7 +474,6 @@ class _HomePageState extends State<HomePage> {
                     )
                     : SizedBox.shrink(),
 
-                // Convert ListView.builder to Column
                 ...devices.asMap().entries.map((entry) {
                   int index = entry.key;
                   var device = entry.value;

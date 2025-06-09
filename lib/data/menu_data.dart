@@ -12,11 +12,11 @@ class SideMenuData {
       icon: Icons.devices,
       title: 'Analytics',
       page: const Devices()),
+    MenuModel(icon: Icons.receipt, title: 'History', page: ReportListPage()),
     MenuModel(
       icon: Icons.settings,
       title: 'Settings',
       page: const SettingsPage(),
     ),
-    MenuModel(icon: Icons.receipt, title: 'History', page: ReportListPage()),
   ];
 }

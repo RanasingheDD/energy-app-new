@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myapp/login/signup/register.dart';
 import 'package:provider/provider.dart';
 import 'provider/ThemeProvider.dart';
 import 'provider/report_data_provider.dart';
@@ -43,7 +44,9 @@ class MyApp extends StatelessWidget {
                 ? const Color.fromARGB(255, 21, 17, 37)
                 : Colors.white,
       ),
-      home: HomePage(title: '',),
+      home:  Supabase.instance.client.auth.currentUser == null
+    ? const AuthPage()
+    : const HomePage(title: 'Home'), //HomePage(title: '',),
     );
   }
 }

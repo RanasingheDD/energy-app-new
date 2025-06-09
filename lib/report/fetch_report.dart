@@ -26,7 +26,7 @@ class ReportListPage extends StatelessWidget {
       ),
       drawer: Drawer(
         child: SideMenuWidget(
-          currentIndex: 3,
+          currentIndex: 4,
           onMenuSelect: (index) {
             print('Selected menu index: $index');
           },

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:myapp/login/signup/register.dart';
 import 'package:myapp/provider/ThemeProvider.dart';
+import 'package:myapp/widgets/snackbar.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/menu.dart';
 
@@ -56,7 +59,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       drawer: Drawer(
         child: SideMenuWidget(
-          currentIndex: 2,
+          currentIndex: 3,
           onMenuSelect: (index) {
             print('Selected menu index: $index');
           },
@@ -124,6 +127,35 @@ class _SettingsPageState extends State<SettingsPage> {
                 onChanged: (value) => setState(() {
                   isVibrationEnabled = value;
                 }),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Log out",
+                  style: TextStyle(
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                    fontSize: 16,
+                    //fontWeight: FontWeight.bold,
+                  ),
+                  ),
+                  IconButton(
+                      onPressed: () async {
+                        await Supabase.instance.client.auth.signOut();
+                        if (context.mounted) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AuthPage()),
+                          );
+                        }
+                      },
+                    icon: Icon(
+                      Icons.logout_outlined,
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                      size: 30,
+                    ),
+                  )
+                ],
               ),
               const SizedBox(height: 20),
               _buildAboutSection(themeProvider.isDarkMode),

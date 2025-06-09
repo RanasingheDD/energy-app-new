@@ -163,27 +163,27 @@ class _DeviceCardState extends State<DeviceCard> {
                   ],
                 ),
                 SizedBox(width: screenSize.width * 0.1),
-Container(
-  decoration: BoxDecoration(
-    shape: BoxShape.circle,
-    boxShadow: device['is_on']
-        ? [
-            BoxShadow(
-              color: const Color.fromARGB(255, 0, 251, 255).withOpacity(0.6),
-              blurRadius: 50,
-              spreadRadius: 1,
-              offset: const Offset(0, 1),
-            ),
-          ]
-        : [],
-  ),
-  child: Switch(
-    value: device['is_on'],
-    onChanged: (_) => widget.onToggle(index),
-    activeColor: const Color.fromARGB(255, 0, 251, 255),
-    inactiveTrackColor: Colors.white24,
-  ),
-)
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: device['is_on']
+                        ? [
+                            BoxShadow(
+                              color: const Color.fromARGB(255, 0, 251, 255).withOpacity(0.6),
+                              blurRadius: 50,
+                              spreadRadius: 1,
+                              offset: const Offset(0, 1),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Switch(
+                    value: device['is_on'],
+                    onChanged: (_) => widget.onToggle(index),
+                    activeColor: const Color.fromARGB(255, 0, 251, 255),
+                    inactiveTrackColor: Colors.white24,
+                  ),
+                )
 
               ],
             ),
