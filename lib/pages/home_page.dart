@@ -5,6 +5,7 @@ import 'package:myapp/widgets/device_card.dart';
 import 'package:myapp/widgets/menu.dart';
 import 'package:myapp/widgets/wether.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required String title});
@@ -33,6 +34,9 @@ class _HomePageState extends State<HomePage> {
     _fetchDevices();
     fetchUpdateStatus();
   }
+
+
+
 
   Future<void> _showEditDialog(int index) async {
     final TextEditingController editController = TextEditingController(
@@ -253,7 +257,10 @@ Future<void> _togglePower(int index) async {
                         height: 40,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(30),
-                          color: Color.fromARGB(255, 21, 17, 37),
+                          color: Colors.transparent,
+                          border: Border.all(
+                          color: Colors.transparent
+                          )
                         ),
                         child: IconButton(
                           onPressed:
@@ -271,7 +278,10 @@ Future<void> _togglePower(int index) async {
                         height: 40,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(30),
-                          color: Color.fromARGB(255, 21, 17, 37),
+                          color: Colors.transparent,
+                          border: Border.all(
+                          color: Colors.transparent
+                          )
                         ),
                         child: IconButton(
                           onPressed:

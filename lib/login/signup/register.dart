@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:myapp/pages/home_page.dart';
 
@@ -31,6 +32,7 @@ class _AuthPageState extends State<AuthPage> {
   @override
   void initState() {
     super.initState();
+    requestLocationPermission();
 
     // Listen for auth state changes (e.g. Google sign-in success)
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
@@ -42,6 +44,15 @@ class _AuthPageState extends State<AuthPage> {
       }
     });
   }
+
+  Future<void> requestLocationPermission() async {
+  var status = await Permission.location.request();
+  if (status.isGranted) {
+    print("Location permission granted");
+  } else {
+    print("Location permission denied");
+  }
+}
 
   void _toggleAuthMode() {
     setState(() {
