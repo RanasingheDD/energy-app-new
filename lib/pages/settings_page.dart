@@ -159,10 +159,11 @@ class _SettingsPageState extends State<SettingsPage> {
                           onPressed: () async {
                             await Supabase.instance.client.auth.signOut();
                             if (context.mounted) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => const AuthPage()),
-                              );
+                            Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const AuthPage()),
+                                  (route) => false,
+                                );
                             }
                           },
                         icon: Icon(
