@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/login/signup/register.dart';
+import 'package:myapp/pages/wifi_configure.dart';
 import 'package:myapp/provider/ThemeProvider.dart';
 import 'package:myapp/widgets/snackbar.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/menu.dart';
+
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -20,6 +22,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool isSoundEnabled = true;
   bool isVibrationEnabled = true;
   String appVersion = '';
+  bool wifiConnected = false;
 
   @override
   void initState() {
@@ -32,6 +35,7 @@ class _SettingsPageState extends State<SettingsPage> {
       appVersion = '1.0.0'; // Example version
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -86,16 +90,29 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(15),
-                        color:themeProvider.isDarkMode ? Colors.grey : Colors.black.withOpacity(0.2),
+                        color: wifiConnected ? Colors.green.shade200 : Colors.grey,
                       ),
                       child: IconButton(
-                        onPressed: () async {
-                          final Uri url = Uri.parse('http://192.168.4.1');
-                            await launchUrl(url, mode: LaunchMode.externalApplication);
+                        onPressed: () {
+                          //final Uri url = Uri.parse('http://192.168.4.1');
+                            //await launchUrl(url, mode: LaunchMode.externalApplication);
+                           // sendWifiCredentials("HONOR X6b", "00000001");
+                        Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(builder: (context) => const WifiConfigure()),
+                        ).then((result) {
+                          if (result == true) {
+                            setState(() {
+                              wifiConnected = true;
+                            });
+                          }
+                        });
+
+
                         },
                         icon: Icon(
                           Icons.wifi_outlined,
-                          color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                          color: wifiConnected ? Colors.green :  Colors.white,
                           size: 30,
                         ),
                       ),
