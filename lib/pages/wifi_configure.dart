@@ -61,7 +61,7 @@ class _WifiConfigureState extends State<WifiConfigure> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("WiFi Configuration"),
+        title: const Text("Configure Your Device with Wifi"),
         backgroundColor: Colors.teal,
       ),
       body: Padding(
