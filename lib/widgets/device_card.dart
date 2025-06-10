@@ -137,7 +137,6 @@ class _DeviceCardState extends State<DeviceCard> {
       _handleAutoModePowerManagement((power ?? 0).toDouble());
     });
 
-
     return Container(
       width: screenSize.width * 0.95,
       height: screenSize.height * 0.34, // Increased height for new controls
