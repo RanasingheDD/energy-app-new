@@ -1,7 +1,32 @@
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SensorDataService {
   final supabase = Supabase.instance.client;
+  final user = Supabase.instance.client.auth.currentUser;
+
+    Future<void> deleteSupabaseData(BuildContext context) async {
+    try {
+      print("1234");
+      final response = await supabase
+          .from('SensorData')
+          .delete()
+          .neq('user_id', user!.id);
+      print("123");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("All data deleted successfully!")),
+      );
+
+      if (response.error == null) {
+      } else {
+        throw response.error!.message;
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
 
   Future<List<Map<String, double>>> fetchSensorData() async {
     try {
@@ -10,12 +35,13 @@ class SensorDataService {
           .from('SensorData') // Table name
           .select(
             'power, voltage, current, temperature, humidity, light',
-          ) // Selecting multiple columns
+          ).eq('user_id', user!.id) // Selecting multiple columns
           .limit(100) // Optional: limit the number of records if needed
           .order(
             'created_at',
             ascending: false,
-          ); // Optional: order by creation date if applicable
+          );
+      //print("kk ${response}");     // Optional: order by creation date if applicable
       final List<Map<String, dynamic>> sensorData =
           response.map((data) {
             return {

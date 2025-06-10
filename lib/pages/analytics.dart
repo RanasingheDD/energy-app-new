@@ -62,6 +62,7 @@ class _DevicesState extends State<Devices> {
   List<Map<String, dynamic>> devices = [];
   bool showInputFields = false;
   final TextEditingController _roomNameController = TextEditingController();
+  final user = Supabase.instance.client.auth.currentUser;
 
   @override
   void initState() {
@@ -76,17 +77,17 @@ class _DevicesState extends State<Devices> {
 
   Future<void> _loadSensorData() async {
     try {
-      final response = await supabase.from('devices').select();
+      //final response = await supabase.from('devices').select();
       final data = await _sensorDataService.fetchSensorData();
+      print(data);
       setState(() {
         //averagePower = _calculateAveragePower(data);
-        devices = List<Map<String, dynamic>>.from(response);
-        print(devices.length);
+        //devices = List<Map<String, dynamic>>.from(response);
+        //print(devices.length);
         cards[0].value = data.isNotEmpty ? data[0]['voltage'].toString() : "0";
         cards[1].value = data.isNotEmpty ? data[0]['current'].toString() : "0";
         cards[2].value = data.isNotEmpty ? data[0]['power'].toString() : "0";
-        cards[3].value =
-            data.isNotEmpty ? data[0]['temperature'].toString() : "0";
+        cards[3].value = data.isNotEmpty ? data[0]['temperature'].toString() : "0";
         cards[4].value = data.isNotEmpty ? data[0]['humidity'].toString() : "0";
         cards[5].value = data.isNotEmpty ? data[0]['light'].toString() : "0";
       });
@@ -155,7 +156,7 @@ class _DevicesState extends State<Devices> {
         Uri.parse(apiUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
-      );
+      ).timeout(Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         showCustomSnackBarDone(context, "Report Sent Succesfully!");
@@ -262,28 +263,35 @@ Future<void> _addDevice() async {
     );
   }
 
-  Future<void> _deleteSupabaseData(BuildContext context) async {
-    try {
-      print("1234");
-      final response = await supabase
-          .from('SensorData')
-          .delete()
-          .neq('id', '01e3cb9c-0979-4f2b-87b8-7dae3417fd1c');
-      print("123");
+Future<void> _deleteSupabaseData(BuildContext context) async {
+  try {
+    print("Fetching all data to delete except the first row...");
+    // Now delete those rows
+    final deleteResponse = await supabase
+        .from('SensorData')
+        .delete()
+        .eq('user_id', user!.id).order('created_at', ascending: true).range(1, 100);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("All data deleted successfully!")),
-      );
+    print("Deleted rows: $deleteResponse");
 
-      if (response.error == null) {
-      } else {
-        throw response.error!.message;
-      }
-    } catch (e) {
-      print(e);
+    if (deleteResponse == null) {
+          snackbarDone();
+    }
+  } catch (e) {
+    print("Error deleting data: $e");
+    if (context.mounted) {
+      snackbarError();
     }
   }
+}
 
+void snackbarDone(){
+  showCustomSnackBarDone(context, "All data deleted successfully!");
+}
+
+void snackbarError(){
+  showCustomSnackBarError(context, "Something went wrong!");
+}
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _showTitle = false;
@@ -403,7 +411,7 @@ Future<void> _addDevice() async {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     BUTTONWIDGET(
-                      name: "Add to Report",
+                      name: "Make Report ",
                       color: Colors.green,
                       additem: _showRoomNameDialog,
                     ),

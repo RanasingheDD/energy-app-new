@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/controller/wetherAPI.dart';
 import 'package:myapp/pages/notification.dart';
+import 'package:myapp/provider/power_provider.dart';
+import 'package:myapp/supabase/supabase_data.dart';
 import 'package:myapp/widgets/device_card.dart';
 import 'package:myapp/widgets/menu.dart';
 import 'package:myapp/widgets/wether.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePage extends StatefulWidget {
@@ -26,16 +29,69 @@ class _HomePageState extends State<HomePage> {
   bool isLoading = true;
   bool hasUpdate = false;
   String version = "";
+  double currentHomePower = 0.0;
 
   @override
   void initState() {
     super.initState();
     _fetchDevices();
     fetchUpdateStatus();
+    listenToDeviceChanges();
+  }
+
+  void listenToDeviceChanges() {
+    supabase
+        .channel('public:SensorData')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'SensorData',
+          callback: (payload) {
+          final newRecord = payload.newRecord;
+          currentHomePower = newRecord['power'];
+          print(currentHomePower);
+          final provider = context.read<PowerProvider>();
+          provider.setPower(currentHomePower);
+
+          },
+        )
+        .subscribe();
   }
 
 
+  Future<void> _updateDevicePriority(int index, String newPriority) async {
+    try {
+      await supabase
+          .from('devices')
+          .update({'priority': newPriority})
+          .eq('id', devices[index]['id']);
+      
+      setState(() {
+        devices[index]['priority'] = newPriority;
+      });
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update priority: $error')),
+      );
+    }
+  }
 
+    Future<void> _updateDeviceMode(int index, bool isAutoMode) async {
+    try {
+      await supabase
+          .from('devices')
+          .update({'auto_mode': isAutoMode})
+          .eq('id', devices[index]['id']);
+      
+      setState(() {
+        devices[index]['auto_mode'] = isAutoMode;
+      });
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to change mode: $error')),
+      );
+    }
+  }
 
   Future<void> _showEditDialog(int index) async {
     final TextEditingController editController = TextEditingController(
@@ -221,6 +277,7 @@ Future<void> _togglePower(int index) async {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final power = context.watch<PowerProvider>().currentHomePower;
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 21, 17, 37),
       key: _scaffoldKey,
@@ -367,9 +424,9 @@ Future<void> _togglePower(int index) async {
                         ),
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
+                          children:  [
                             Text(
-                              '10KWh',
+                              "${(power?? 0).toString()} W",
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -489,6 +546,9 @@ Future<void> _togglePower(int index) async {
                       onToggle: _togglePower,
                       onEdit: _showEditDialog,
                       onDelete: _removeDevice,
+                      currentHomePower: currentHomePower,
+                      onModeChange: _updateDeviceMode,
+                      onPriorityChange: _updateDevicePriority,
                     ),
                   );
                 }),

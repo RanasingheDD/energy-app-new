@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/login/signup/register.dart';
+import 'package:myapp/provider/power_provider.dart';
 import 'package:provider/provider.dart';
 import 'provider/ThemeProvider.dart';
 import 'provider/report_data_provider.dart';
@@ -21,6 +22,7 @@ void main() async {
         ChangeNotifierProvider(
           create: (context) => ThemeProvider(), // Add ThemeProvider
         ),
+        ChangeNotifierProvider(create: (_) => PowerProvider()),
       ],
       child: const MyApp(),
     ),

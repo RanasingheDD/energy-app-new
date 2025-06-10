@@ -64,7 +64,7 @@ class _ClimateState extends State<Climate> {
 
     return Container(
       width: double.infinity,
-      height: screenSize.height * 0.35,
+      height: screenSize.height * 0.45,
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
