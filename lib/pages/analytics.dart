@@ -11,7 +11,7 @@ import 'package:myapp/widgets/snackbar.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Initial cards data
+//Initial cards data
 List<CardData> cards = [
   CardData(
     title: "Voltage",
@@ -56,10 +56,9 @@ class Devices extends StatefulWidget {
 class _DevicesState extends State<Devices> {
   final SensorDataService _sensorDataService = SensorDataService();
   final supabase = Supabase.instance.client;
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController idController = TextEditingController();
+ 
   double averagePower = 0.0;
-  List<Map<String, dynamic>> devices = [];
+
   bool showInputFields = false;
   final TextEditingController _roomNameController = TextEditingController();
   final user = Supabase.instance.client.auth.currentUser;
@@ -183,56 +182,6 @@ class _DevicesState extends State<Devices> {
     );
   }
 
-Future<void> _addDevice() async {
-  final name = nameController.text.trim();
-  final id = idController.text.trim().toUpperCase(); // MAC uppercase
-
-  final macRegex = RegExp(r'^([0-9A-F]{2}:){5}[0-9A-F]{2}$');
-
-  if (name.isEmpty || id.isEmpty) {
-    showCustomSnackBarError(context, "Please fill all fields.");
-    return;
-  }
-
-  if (!macRegex.hasMatch(id)) {
-    showCustomSnackBarError(context, "Invalid format. Use XX:XX:XX:XX:XX:XX");
-    return;
-  }
-
-  try {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-
-    if (userId == null) {
-      showCustomSnackBarError(context, "User not logged in.");
-      return;
-    }
-
-    final newDevice = {
-      'name': name,
-      'mac': id,
-      'is_on': false,
-      'user_id': userId, // Link device to the user
-    };
-
-    final insertedDevice = await supabase
-        .from('devices')
-        .insert(newDevice)
-        .select()
-        .single();
-
-    setState(() {
-      devices.add(insertedDevice);
-      showInputFields = false;
-      nameController.clear();
-      idController.clear();
-    });
-
-    showCustomSnackBarDone(context, "New Device Added Successfully!");
-  } catch (e) {
-    showCustomSnackBarError(context, "Error adding device: $e");
-  }
-}
-
 
   void _confirmAndDeleteDatabase(BuildContext context) {
     showDialog(
@@ -325,17 +274,7 @@ void snackbarError(){
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: Icon(
-              showInputFields ? Icons.close : Icons.add,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              setState(() {
-                showInputFields = !showInputFields;
-              });
-            },
-          ),
+
         ],
       ),
       drawer: Drawer(
@@ -353,38 +292,7 @@ void snackbarError(){
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (showInputFields)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: nameController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: const InputDecoration(
-                              labelText: 'Device Name',
-                              labelStyle: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: idController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: const InputDecoration(
-                              labelText: 'Device ID',
-                              labelStyle: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.check, color: Colors.green),
-                          onPressed: _addDevice,
-                        ),
-                      ],
-                    ),
-                  ),
+
 
                 Padding(
                   padding: const EdgeInsets.all(8.0),

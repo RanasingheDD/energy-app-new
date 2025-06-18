@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:myapp/controller/wetherAPI.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Climate extends StatefulWidget {
   const Climate({super.key, required this.weatherService});
@@ -16,11 +17,13 @@ class _ClimateState extends State<Climate> {
   bool _isLoading = false;
   String _errorMessage = '';
   bool _hasFetchedOnce = false;
+  String name = "";
 
   @override
   void initState() {
     super.initState();
     _initializeWeather();
+    _getUserName();
   }
 
   void _initializeWeather() {
@@ -29,6 +32,23 @@ class _ClimateState extends State<Climate> {
       _hasFetchedOnce = true;
     }
   }
+
+   Future<void> _getUserName() async{
+    try {
+      final user = await Supabase.instance.client.auth.currentUser;
+      final displayName = user?.userMetadata?['full_name'] ?? 'No name set';
+      setState(() {
+          this.name = displayName;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = '⚠️ Unable to load username.';
+      });
+    }
+
+  }
+
+
 
   Future<void> _fetchWeather() async {
     setState(() {
@@ -87,11 +107,21 @@ class _ClimateState extends State<Climate> {
             )
           : _weatherData != null
               ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    SizedBox(height: 60,),
+                    Text(
+                          'Hi ${name}',
+                              style: GoogleFonts.alef(
+                              fontSize: 25,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                     Expanded(
                       child: Row(
                         children: [
-                          Stack(
+                          Stack(                         
                             alignment: Alignment.center,
                             children: [
                               Image.asset(

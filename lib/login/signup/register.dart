@@ -14,10 +14,13 @@ class _AuthPageState extends State<AuthPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _usernameController = TextEditingController();
   String _selectedCountry = 'Sri Lanka';
 
   bool _isLogin = true;
   bool _isLoading = false;
+  bool _showPassword = false;
+  bool _showConfirmPassword = false;
 
   final List<String> _countries = [
     'Sri Lanka',
@@ -34,7 +37,6 @@ class _AuthPageState extends State<AuthPage> {
     super.initState();
     requestLocationPermission();
 
-    // Listen for auth state changes (e.g. Google sign-in success)
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (data.event == AuthChangeEvent.signedIn && mounted) {
         Navigator.pushReplacement(
@@ -45,18 +47,32 @@ class _AuthPageState extends State<AuthPage> {
     });
   }
 
-  Future<void> requestLocationPermission() async {
-  var status = await Permission.location.request();
-  if (status.isGranted) {
-    print("Location permission granted");
-  } else {
-    print("Location permission denied");
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _usernameController.dispose();
+    super.dispose();
   }
-}
+
+  Future<void> requestLocationPermission() async {
+    var status = await Permission.location.request();
+    if (status.isGranted) {
+      debugPrint("Location permission granted");
+    } else {
+      debugPrint("Location permission denied");
+    }
+  }
 
   void _toggleAuthMode() {
     setState(() {
       _isLogin = !_isLogin;
+      // Clear controllers when switching modes
+      if (_isLogin) {
+        _usernameController.clear();
+        _confirmPasswordController.clear();
+      }
     });
   }
 
@@ -67,27 +83,42 @@ class _AuthPageState extends State<AuthPage> {
         OAuthProvider.google,
         redirectTo: 'io.supabase.flutter://login-callback',
       );
-      // The actual redirect and navigation happen on auth state change listener
     } catch (e) {
-      _showError('Google sign-in failed: $e');
+      _showError('Google sign-in failed: ${e.toString()}');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _authenticate() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final username = _usernameController.text.trim();
     final confirmPassword = _confirmPasswordController.text;
 
-    if (email.isEmpty || password.isEmpty || (!_isLogin && _selectedCountry.isEmpty)) {
-      _showError('Please fill all fields.');
+    // Validation
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please fill all required fields.');
       return;
     }
 
-    if (!_isLogin && password != confirmPassword) {
-      _showError('Passwords do not match.');
-      return;
+    if (!_isLogin) {
+      if (username.isEmpty) {
+        _showError('Please enter a username');
+        return;
+      }
+      if (username.length < 3) {
+        _showError('Username must be at least 3 characters');
+        return;
+      }
+      if (password != confirmPassword) {
+        _showError('Passwords do not match.');
+        return;
+      }
+      if (password.length < 6) {
+        _showError('Password must be at least 6 characters');
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -97,162 +128,299 @@ class _AuthPageState extends State<AuthPage> {
       if (_isLogin) {
         await auth.signInWithPassword(email: email, password: password);
       } else {
-        await auth.signUp(
+        final response = await auth.signUp(
           email: email,
           password: password,
           data: {
+            'username': username,
             'country': _selectedCountry,
+            'created_at': DateTime.now().toIso8601String(),
           },
         );
-        _showMessage('Registered successfully! Please login.');
-        _toggleAuthMode();
-        return;
+        
+        if (response.user == null) {
+          _showMessage('Registration email sent! Please verify your email.');
+          _toggleAuthMode();
+          return;
+        }
       }
 
-      if (auth.currentUser != null && context.mounted) {
+      if (auth.currentUser != null && mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomePage(title: 'Home')),
         );
       }
     } catch (e) {
-      _showError(e.toString());
+      _showError(_parseAuthError(e.toString()));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  String _parseAuthError(String error) {
+    if (error.contains('User already registered')) {
+      return 'Email already in use. Please login or use another email.';
+    } else if (error.contains('Invalid login credentials')) {
+      return 'Invalid email or password';
+    } else if (error.contains('Password should be at least')) {
+      return 'Password must be at least 6 characters';
+    }
+    return error;
+  }
+
   void _showError(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
   void _showMessage(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 44, 38, 131),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.deepPurple, Color.fromARGB(255, 0, 217, 255)],
-            begin: Alignment.bottomLeft,
-            end: Alignment.topRight,
+            colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-            child: Card(
-              elevation: 10,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _isLogin ? 'Login' : 'Register',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium!
-                          .copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 24),
-                    TextField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(labelText: 'Email'),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _passwordController,
-                      decoration: const InputDecoration(labelText: 'Password'),
-                      obscureText: true,
-                    ),
-                    if (!_isLogin) ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _confirmPasswordController,
-                        decoration: const InputDecoration(labelText: 'Confirm Password'),
-                        obscureText: true,
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: Card(
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _isLogin ? 'Welcome Back' : 'Create Account',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepPurple,
+                            ),
+                      ),
+                      const SizedBox(height: 24),
+                      if (!_isLogin) ...[
+                        TextFormField(
+                          controller: _usernameController,
+                          decoration: InputDecoration(
+                            labelText: 'Username',
+                            prefixIcon: const Icon(Icons.person),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a username';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: const Icon(Icons.email),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        value: _selectedCountry,
-                        items: _countries
-                            .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCountry = value!;
-                          });
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: const Icon(Icons.lock),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _showPassword ? Icons.visibility : Icons.visibility_off,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _showPassword = !_showPassword;
+                              });
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        obscureText: !_showPassword,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          return null;
                         },
-                        decoration: const InputDecoration(labelText: 'Country'),
+                      ),
+                      if (!_isLogin) ...[
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          decoration: InputDecoration(
+                            labelText: 'Confirm Password',
+                            prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _showConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _showConfirmPassword = !_showConfirmPassword;
+                                });
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          obscureText: !_showConfirmPassword,
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          value: _selectedCountry,
+                          items: _countries
+                              .map((country) => DropdownMenuItem(
+                                    value: country,
+                                    child: Text(country),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCountry = value!;
+                            });
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Country',
+                            prefixIcon: const Icon(Icons.location_on),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: _isLoading ? null : _authenticate,
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                )
+                              : Text(
+                                  _isLogin ? 'Login' : 'Register',
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          const Expanded(child: Divider()),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              'or',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: Colors.grey),
+                            ),
+                          ),
+                          const Expanded(child: Divider()),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: OutlinedButton.icon(
+                          icon: Image.asset(
+                            'assets/images/google.png',
+                            height: 24,
+                            width: 24,
+                          ),
+                          label: const Text('Continue with Google'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.grey),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: _isLoading ? null : signInWithGoogle,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: _isLoading ? null : _toggleAuthMode,
+                        child: RichText(
+                          text: TextSpan(
+                            text: _isLogin
+                                ? "Don't have an account? "
+                                : "Already have an account? ",
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: Colors.grey),
+                            children: [
+                              TextSpan(
+                                text: _isLogin ? 'Register' : 'Login',
+                                style: const TextStyle(
+                                  color: Colors.deepPurple,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
-                    const SizedBox(height: 24),
-
-                    ElevatedButton.icon(
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.login),
-                      label: Text(_isLogin ? 'Login' : 'Register'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: _isLoading ? null : _authenticate,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: const [
-                        Expanded(child: Divider(thickness: 1)),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text("or"),
-                        ),
-                        Expanded(child: Divider(thickness: 1)),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    ElevatedButton.icon(
-                      onPressed: _isLoading ? null : signInWithGoogle,
-                      icon: Image.asset(
-                        "assets/google.png", // make sure this path is correct and declared in pubspec.yaml
-                        height: 28,
-                        width: 28,
-                      ),
-                      label: const Text("Sign in with Google"),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color.fromARGB(255, 0, 0, 0),                      
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: _isLoading ? null : _toggleAuthMode,
-                      child: Text(_isLogin
-                          ? "Don't have an account? Register"
-                          : "Already have an account? Login"),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

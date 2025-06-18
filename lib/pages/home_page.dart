@@ -7,6 +7,7 @@ import 'package:myapp/widgets/menu.dart';
 import 'package:myapp/widgets/wether.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:myapp/widgets/snackbar.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required String title});
@@ -28,12 +29,15 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final SupabaseClient _supabase = Supabase.instance.client;
   final WeatherService _weatherService = WeatherService();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController idController = TextEditingController();
 
   List<Map<String, dynamic>> _devices = [];
   bool _isLoading = true;
   bool _hasUpdate = false;
   String _version = "";
   double _currentHomePower = 0.0;
+  bool showInputFields = false;
 
   @override
   void initState() {
@@ -65,6 +69,58 @@ class _HomePageState extends State<HomePage> {
         )
         .subscribe();
   }
+
+Future<void> _addDevice(IconData? icon) async {
+  final name = nameController.text.trim();
+  final id = idController.text.trim().toUpperCase();
+  final iconCode = icon?.codePoint ?? Icons.devices_other.codePoint;
+
+  final macRegex = RegExp(r'^([0-9A-F]{2}:){5}[0-9A-F]{2}$');
+
+  if (name.isEmpty || id.isEmpty) {
+    showCustomSnackBarError(context, "Please fill all fields.");
+    return;
+  }
+
+  if (!macRegex.hasMatch(id)) {
+    showCustomSnackBarError(context, "Invalid format. Use XX:XX:XX:XX:XX:XX");
+    return;
+  }
+
+  try {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+
+    if (userId == null) {
+      showCustomSnackBarError(context, "User not logged in.");
+      return;
+    }
+
+    final newDevice = {
+      'name': name,
+      'mac': id,
+      'is_on': false,
+      'user_id': userId,
+      'icon_code': iconCode, // Store the icon code point
+    };
+
+    final insertedDevice = await _supabase
+        .from('devices')
+        .insert(newDevice)
+        .select()
+        .single();
+
+    setState(() {
+      _devices.add(insertedDevice);
+      showInputFields = false;
+      nameController.clear();
+      idController.clear();
+    });
+
+    showCustomSnackBarDone(context, "New Device Added Successfully!");
+  } catch (e) {
+    showCustomSnackBarError(context, "Error adding device: $e");
+  }
+}
 
   // Data Fetching Methods
   Future<void> _fetchDevices() async {
@@ -169,51 +225,60 @@ class _HomePageState extends State<HomePage> {
   }
 
   // UI Helper Methods
-  Future<void> _showEditDialog(int index) async {
-    final editController = TextEditingController(text: _devices[index]['name']);
+Future<void> _showEditDialog(int index) async {
+  final editController = TextEditingController(text: _devices[index]['name']);
 
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF182C36),
-        title: const Text('Edit Device Name', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: editController,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Enter new name',
-            hintStyle: TextStyle(color: Colors.white54),
-          ),
-        ),
-        actions: [
-          TextButton(
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
-            onPressed: () => Navigator.pop(context),
-          ),
-          TextButton(
-            child: const Text('Save', style: TextStyle(color: Colors.green)),
-            onPressed: () => _saveDeviceName(index, editController.text.trim()),
-          ),
-        ],
+  await showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: const Color(0xFF182C36),
+      title: const Text(
+        'Edit Device Name',
+        style: TextStyle(color: Colors.white),
       ),
-    );
+      content: TextField(
+        controller: editController,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          hintText: 'Enter new name',
+          hintStyle: TextStyle(color: Colors.white54),
+        ),
+      ),
+      actions: [
+        TextButton(
+          child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        TextButton(
+          child: const Text('Save', style: TextStyle(color: Colors.green)),
+          onPressed: () async {
+            final newName = editController.text.trim();
+            if (newName.isNotEmpty) {
+              Navigator.pop(context); // Close the dialog immediately
+              await _saveDeviceName(index, newName);
+            }
+          },
+        ),
+      ],
+    ),
+  );
+
+  editController.dispose();
+}
+
+Future<void> _saveDeviceName(int index, String newName) async {
+  try {
+    await _supabase
+        .from('devices')
+        .update({'name': newName})
+        .eq('id', _devices[index]['id']);
+    setState(() => _devices[index]['name'] = newName);
+  } catch (e) {
+    _showErrorSnackbar('Failed to update device name: $e');
+  }finally{
+
   }
-
-  Future<void> _saveDeviceName(int index, String newName) async {
-    if (newName.isEmpty) return;
-
-    try {
-      await _supabase
-          .from('devices')
-          .update({'name': newName})
-          .eq('device_id', _devices[index]['device_id']);
-
-      setState(() => _devices[index]['name'] = newName);
-      Navigator.pop(context);
-    } catch (e) {
-      _showErrorSnackbar('Failed to update device name: $e');
-    }
-  }
+}
 
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -313,7 +378,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "${(power ?? 0).toString()} W",
+                "${(power).toString()} W",
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
               ),
               const Text(
@@ -396,6 +461,181 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+Widget _buildAddButton() {
+  // List of available device icons
+  final List<IconData> deviceIcons = [
+    Icons.lightbulb_outline,  // Light
+    Icons.ac_unit,            // AC
+    Icons.tv,                 // TV
+    Icons.mode_fan_off_outlined,           // fan
+    Icons.kitchen,            // Kitchen appliance
+    Icons.router,             // Router
+    Icons.phone_android,      // Smart device
+    Icons.computer,              // computer
+    Icons.speaker,            // Speaker
+    Icons.camera_alt,         // Camera
+  ];
+  
+  IconData? selectedIcon = Icons.devices_other; // Default icon
+
+  return Column(
+    children: [
+      if (showInputFields)
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.blueGrey[800],
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                children: [
+                  // Icon Selection Grid
+                  const Text(
+                    'Select Device Icon',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 100,
+                    child: GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 5,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                      ),
+                      itemCount: deviceIcons.length,
+                      itemBuilder: (context, index) {
+                        final icon = deviceIcons[index];
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedIcon = icon;
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: selectedIcon == icon 
+                                  ? Colors.deepPurpleAccent.withOpacity(0.5)
+                                  : Colors.blueGrey[700],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              icon,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Device Name Field
+                  TextField(
+                    controller: nameController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Device Name',
+                      labelStyle: const TextStyle(color: Colors.white70),
+                      prefixIcon: Icon(selectedIcon, color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blueGrey[600]!),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: Colors.blue),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Device ID Field
+                  TextField(
+                    controller: idController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Device ID (XX:XX:XX:XX:XX:XX)',
+                      labelStyle: const TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blueGrey[600]!),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: Colors.blue),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.info, size: 20),
+                        color: Colors.blueGrey[300],
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Device ID Format'),
+                              content: const Text(
+                                'Please enter the device ID in correct format:\n\nXX:XX:XX:XX:XX:XX\n\nExample: 1A:2B:3C:4D:5E:6F'),
+                              actions: [
+                                TextButton(
+                                  child: const Text('OK'),
+                                  onPressed: () => Navigator.pop(context),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Action Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            showInputFields = false;
+                            nameController.clear();
+                            idController.clear();
+                          });
+                        },
+                        child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () => _addDevice(selectedIcon),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurpleAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Add Device'),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+    ],
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -419,6 +659,7 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildAppBar(context, screenSize),
+                if (showInputFields)  ...[_buildAddButton()],
                 const SizedBox(height: 20),
                 Center(child: _buildEnergyUsageCard(screenSize, power?? 0)),
                 if (_hasUpdate) ...[
@@ -430,11 +671,29 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 10),
                 ],
                 _buildDeviceList(),
+                
+                //_buildAddButton(),
               ],
             ),
           ),
         ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        backgroundColor: Colors.deepPurpleAccent,
+        foregroundColor: Colors.white,
+        onPressed: () {
+              setState(() {
+                showInputFields = !showInputFields;
+                print(showInputFields);
+                if (!showInputFields) {
+                  nameController.clear();
+                  idController.clear();
+                }
+              });
+        }
+        ),
     );
   }
 }
