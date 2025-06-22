@@ -12,7 +12,7 @@ class DeviceCard extends StatefulWidget {
   final Function(int, String) onPriorityChange;
   final Function(int, bool) onModeChange;
   final double currentHomePower; // Current total home power consumption
-  
+
   const DeviceCard({
     super.key,
     required this.device,
@@ -39,7 +39,6 @@ class _DeviceCardState extends State<DeviceCard> {
   static const double powerThresholdHigh = 3000.0; // 3kW
   static const double powerThresholdMedium = 2500.0; // 2.5kW
   static const double powerThresholdLow = 2000.0; // 2kW
-  
 
   @override
   void initState() {
@@ -48,14 +47,14 @@ class _DeviceCardState extends State<DeviceCard> {
     _deviceCount();
   }
 
-
   Future<void> _fetchDeviceStatus() async {
     try {
-      final response = await supabase
-          .from('devices')
-          .select('is_on')
-          .eq('id', widget.device['id'])
-          .single();
+      final response =
+          await supabase
+              .from('devices')
+              .select('is_on')
+              .eq('id', widget.device['id'])
+              .single();
       setState(() {
         isOn = response['is_on'] ?? false;
         isLoading = false;
@@ -88,7 +87,7 @@ class _DeviceCardState extends State<DeviceCard> {
     final isCurrentlyOn = widget.device['is_on'];
 
     // Check if we need to turn off based on priority and thresholds
-    if (isCurrentlyOn && _shouldTurnOffBasedOnPriority(priority,power  )) {
+    if (isCurrentlyOn && _shouldTurnOffBasedOnPriority(priority, power)) {
       widget.onToggle(widget.index);
     }
     // Check if we can turn back on when power decreases
@@ -110,10 +109,10 @@ class _DeviceCardState extends State<DeviceCard> {
     }
   }
 
-  bool _shouldTurnOnBasedOnPriority(String priority,double power) {
+  bool _shouldTurnOnBasedOnPriority(String priority, double power) {
     // Add some hysteresis to prevent rapid toggling
     const double hysteresis = 200.0; // 200W buffer
-    
+
     switch (priority) {
       case 'low':
         return power < (powerThresholdLow - hysteresis);
@@ -133,7 +132,7 @@ class _DeviceCardState extends State<DeviceCard> {
     final index = widget.index;
     final power = context.watch<PowerProvider>().currentHomePower;
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleAutoModePowerManagement((power ?? 0).toDouble());
     });
 
@@ -172,16 +171,23 @@ class _DeviceCardState extends State<DeviceCard> {
                     widget.onDelete(index);
                   }
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Text('Edit', style: TextStyle(color: Colors.white)),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Delete', style: TextStyle(color: Colors.white)),
-                  ),
-                ],
+                itemBuilder:
+                    (context) => const [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Text(
+                          'Edit',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
               ),
               Container(
                 width: 60,
@@ -206,9 +212,10 @@ class _DeviceCardState extends State<DeviceCard> {
                   Text(
                     device['is_on'] ? 'Connected' : 'Waiting',
                     style: TextStyle(
-                      color: device['is_on']
-                          ? const Color.fromARGB(255, 0, 251, 255)
-                          : Colors.white38,
+                      color:
+                          device['is_on']
+                              ? const Color.fromARGB(255, 0, 251, 255)
+                              : Colors.white38,
                       fontSize: 14,
                     ),
                   ),
@@ -217,17 +224,22 @@ class _DeviceCardState extends State<DeviceCard> {
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  boxShadow: device['is_on']
-                      ? [
-                          BoxShadow(
-                            color: const Color.fromARGB(255, 0, 251, 255)
-                                .withOpacity(0.6),
-                            blurRadius: 50,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 1),
-                          ),
-                        ]
-                      : [],
+                  boxShadow:
+                      device['is_on']
+                          ? [
+                            BoxShadow(
+                              color: const Color.fromARGB(
+                                255,
+                                0,
+                                251,
+                                255,
+                              ).withOpacity(0.6),
+                              blurRadius: 50,
+                              spreadRadius: 1,
+                              offset: const Offset(0, 1),
+                            ),
+                          ]
+                          : [],
                 ),
                 child: Switch(
                   value: device['is_on'],
@@ -242,7 +254,7 @@ class _DeviceCardState extends State<DeviceCard> {
               ),
             ],
           ),
-          
+
           // Auto/Manual mode toggle
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -283,7 +295,7 @@ class _DeviceCardState extends State<DeviceCard> {
               ],
             ),
           ),
-          
+
           // Priority selector (only visible in auto mode)
           if (device['auto_mode'])
             Padding(
@@ -299,15 +311,16 @@ class _DeviceCardState extends State<DeviceCard> {
                     value: device['priority'] ?? 'medium',
                     dropdownColor: const Color(0xFF204952),
                     style: const TextStyle(color: Colors.white),
-                    items: ['high', 'medium', 'low'].map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(
-                          value[0].toUpperCase() + value.substring(1),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      );
-                    }).toList(),
+                    items:
+                        ['high', 'medium', 'low'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(
+                              value[0].toUpperCase() + value.substring(1),
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          );
+                        }).toList(),
                     onChanged: (String? newValue) {
                       if (newValue != null) {
                         widget.onPriorityChange(index, newValue);

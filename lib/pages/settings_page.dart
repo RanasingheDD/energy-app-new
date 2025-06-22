@@ -8,7 +8,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/menu.dart';
 
-
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -32,26 +31,27 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _getAppVersion() async {
     setState(() {
-      appVersion = '1.0.0'; // Example version
+      appVersion = '2.0.0';
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      backgroundColor: themeProvider.isDarkMode
-          ? const Color.fromARGB(255, 21, 17, 37)
-          : Colors.white,
+      backgroundColor:
+          themeProvider.isDarkMode
+              ? const Color.fromARGB(255, 21, 17, 37)
+              : Colors.white,
       key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('Settings'),
         centerTitle: true,
-        backgroundColor: themeProvider.isDarkMode
-            ? const Color.fromARGB(255, 21, 17, 37)
-            : Colors.white,
+        backgroundColor:
+            themeProvider.isDarkMode
+                ? const Color.fromARGB(255, 21, 17, 37)
+                : Colors.white,
         foregroundColor: themeProvider.isDarkMode ? Colors.white : Colors.black,
         leading: IconButton(
           icon: Icon(
@@ -78,119 +78,102 @@ class _SettingsPageState extends State<SettingsPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Wifi Configure",
-                  style: TextStyle(
-                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                    fontSize: 16,
-                    //fontWeight: FontWeight.bold,
-                  ),
+                  Text(
+                    "Wifi Configure",
+                    style: TextStyle(
+                      color:
+                          themeProvider.isDarkMode
+                              ? Colors.white
+                              : Colors.black,
+                      fontSize: 16,
+                      //fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(15),
-                        color: wifiConnected ? Colors.green.shade200 : Colors.grey,
+                        color:
+                            wifiConnected ? Colors.green.shade200 : Colors.grey,
                       ),
                       child: IconButton(
                         onPressed: () {
                           //final Uri url = Uri.parse('http://192.168.4.1');
-                            //await launchUrl(url, mode: LaunchMode.externalApplication);
-                           // sendWifiCredentials("HONOR X6b", "00000001");
-                        Navigator.push<bool>(
-                          context,
-                          MaterialPageRoute(builder: (context) => const WifiConfigure()),
-                        ).then((result) {
-                          if (result == true) {
-                            setState(() {
-                              wifiConnected = true;
-                            });
-                          }
-                        });
-
-
+                          //await launchUrl(url, mode: LaunchMode.externalApplication);
+                          // sendWifiCredentials("HONOR X6b", "00000001");
+                          Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const WifiConfigure(),
+                            ),
+                          ).then((result) {
+                            if (result == true) {
+                              setState(() {
+                                wifiConnected = true;
+                              });
+                            }
+                          });
                         },
                         icon: Icon(
                           Icons.wifi_outlined,
-                          color: wifiConnected ? Colors.green :  Colors.white,
+                          color: wifiConnected ? Colors.green : Colors.white,
                           size: 30,
                         ),
                       ),
                     ),
-                  )
+                  ),
                 ],
-              ),
-              SizedBox(height: MediaQuery.sizeOf(
-                context
-              ).height * 0.03
-              )
-              ,
-              _buildSwitchTile(
-                title: themeProvider.isDarkMode ? 'Dark Mode' : 'Light Mode',
-                value: themeProvider.isDarkMode,
-                onChanged: themeProvider.toggleTheme,
-              ),
-              const SizedBox(height: 20),
-              _buildSwitchTile(
-                title: 'Push Notifications',
-                value: isPushNotificationEnabled,
-                onChanged: (value) => setState(() {
-                  isPushNotificationEnabled = value;
-                }),
-              ),
-              const SizedBox(height: 20),
-              _buildSwitchTile(
-                title: 'Notification Sound',
-                value: isSoundEnabled,
-                onChanged: (value) => setState(() {
-                  isSoundEnabled = value;
-                }),
-              ),
-              const SizedBox(height: 20),
-              _buildSwitchTile(
-                title: 'Notification Vibration',
-                value: isVibrationEnabled,
-                onChanged: (value) => setState(() {
-                  isVibrationEnabled = value;
-                }),
               ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Log out",
-                  style: TextStyle(
-                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                    fontSize: 16,
-                    //fontWeight: FontWeight.bold,
-                  ),
+                  Text(
+                    "Log out",
+                    style: TextStyle(
+                      color:
+                          themeProvider.isDarkMode
+                              ? Colors.white
+                              : Colors.black,
+                      fontSize: 16,
+                      //fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(15),
-                        color:themeProvider.isDarkMode ? Colors.grey : Colors.black.withOpacity(0.2),
+                        color:
+                            themeProvider.isDarkMode
+                                ? Colors.grey
+                                : Colors.black.withOpacity(0.2),
                       ),
                       child: IconButton(
-                          onPressed: () async {
-                            await Supabase.instance.client.auth.signOut();
-                            if (context.mounted) {
+                        onPressed: () async {
+                          await Supabase.instance.client.auth.signOut();
+                          if (context.mounted) {
                             Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const AuthPage()),
-                                  (route) => false,
-                                );
-                            }
-                          },
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AuthPage(),
+                              ),
+                              (route) => false,
+                            );
+                          }
+                        },
                         icon: Icon(
                           Icons.logout_outlined,
-                          color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                          color:
+                              themeProvider.isDarkMode
+                                  ? Colors.white
+                                  : Colors.black,
                           size: 30,
                         ),
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -215,9 +198,10 @@ class _SettingsPageState extends State<SettingsPage> {
         Text(
           title,
           style: TextStyle(
-            color: Provider.of<ThemeProvider>(context).isDarkMode
-                ? Colors.white
-                : Colors.black,
+            color:
+                Provider.of<ThemeProvider>(context).isDarkMode
+                    ? Colors.white
+                    : Colors.black,
             fontSize: 16,
           ),
         ),
@@ -235,7 +219,10 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Divider(color: const Color.fromRGBO(255, 255, 255, 0.302), thickness: 1),
+        Divider(
+          color: const Color.fromRGBO(255, 255, 255, 0.302),
+          thickness: 1,
+        ),
         Text(
           'About Us',
           style: TextStyle(

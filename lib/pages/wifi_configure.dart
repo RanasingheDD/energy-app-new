@@ -16,7 +16,7 @@ class _WifiConfigureState extends State<WifiConfigure> {
   final TextEditingController _ssidController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _supabase = Supabase.instance.client;
-  
+
   bool _isLoading = false;
   bool _showPassword = false;
   bool _connectionSuccess = false;
@@ -30,66 +30,68 @@ class _WifiConfigureState extends State<WifiConfigure> {
     super.dispose();
   }
 
-Future<void> _sendWifiCredentials() async {
-  if (!_formKey.currentState!.validate()) return;
+  Future<void> _sendWifiCredentials() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  setState(() {
-    _isLoading = true;
-    _message = '';
-    _connectionSuccess = false;
-  });
+    setState(() {
+      _isLoading = true;
+      _message = '';
+      _connectionSuccess = false;
+    });
 
-  try {
-    final response = await http.post(
-      Uri.parse('http://192.168.4.1/wifisave'),
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: {
-        's': _ssidController.text.trim(),
-        'p': _passwordController.text.trim(),
-        'id1': _supabase.auth.currentUser?.id,
-      },
-    ).timeout(const Duration(seconds: 10));
+    try {
+      final response = await http
+          .post(
+            Uri.parse('http://192.168.4.1/wifisave'),
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: {
+              's': _ssidController.text.trim(),
+              'p': _passwordController.text.trim(),
+              'id1': _supabase.auth.currentUser?.id,
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (response.statusCode == 200) {
+      if (response.statusCode == 200) {
+        setState(() {
+          _message = 'WiFi credentials sent successfully!';
+          _messageColor = Colors.green;
+          _connectionSuccess = true;
+        });
+        _passwordController.clear();
+      } else {
+        setState(() {
+          _message =
+              'Failed to configure device (Error ${response.statusCode})';
+          _messageColor = Colors.orange;
+        });
+      }
+    } on http.ClientException catch (e) {
+      if (!mounted) return;
       setState(() {
-        _message = 'WiFi credentials sent successfully!';
-        _messageColor = Colors.green;
-        _connectionSuccess = true;
+        _message = 'Network error: ${e.message}';
+        _messageColor = Colors.red;
       });
-      _passwordController.clear();
-    } else {
+    } on TimeoutException {
+      if (!mounted) return;
       setState(() {
-        _message = 'Failed to configure device (Error ${response.statusCode})';
-        _messageColor = Colors.orange;
+        _message = 'Connection timeout — device not responding';
+        _messageColor = Colors.red;
       });
+    } catch (e, stack) {
+      debugPrint('Unexpected error: $e\n$stack');
+      if (!mounted) return;
+      setState(() {
+        _message = 'An unexpected error occurred';
+        _messageColor = Colors.red;
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
     }
-  } on http.ClientException catch (e) {
-    if (!mounted) return;
-    setState(() {
-      _message = 'Network error: ${e.message}';
-      _messageColor = Colors.red;
-    });
-  } on TimeoutException {
-    if (!mounted) return;
-    setState(() {
-      _message = 'Connection timeout — device not responding';
-      _messageColor = Colors.red;
-    });
-  } catch (e, stack) {
-    debugPrint('Unexpected error: $e\n$stack');
-    if (!mounted) return;
-    setState(() {
-      _message = 'An unexpected error occurred';
-      _messageColor = Colors.red;
-    });
-  } finally {
-    if (!mounted) return;
-    setState(() => _isLoading = false);
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -142,9 +144,7 @@ Future<void> _sendWifiCredentials() async {
                   }
                   return null;
                 },
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(32),
-                ],
+                inputFormatters: [LengthLimitingTextInputFormatter(32)],
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -181,16 +181,17 @@ Future<void> _sendWifiCredentials() async {
               ),
               const SizedBox(height: 30),
               ElevatedButton.icon(
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.send),
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                        : const Icon(Icons.send),
                 label: Text(_isLoading ? 'Configuring...' : 'Configure Device'),
                 onPressed: _isLoading ? null : _sendWifiCredentials,
                 style: ElevatedButton.styleFrom(
@@ -209,9 +210,7 @@ Future<void> _sendWifiCredentials() async {
                   decoration: BoxDecoration(
                     color: _messageColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _messageColor.withOpacity(0.3),
-                    ),
+                    border: Border.all(color: _messageColor.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
@@ -251,28 +250,29 @@ Future<void> _sendWifiCredentials() async {
   void _showHelpDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Device Configuration Help'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('1. Put your device in configuration mode'),
-            SizedBox(height: 8),
-            Text('2. Connect your phone to the device hotspot'),
-            SizedBox(height: 8),
-            Text('3. Enter your home WiFi credentials'),
-            SizedBox(height: 8),
-            Text('4. The device will attempt to connect'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Device Configuration Help'),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('1. Put your device in configuration mode'),
+                SizedBox(height: 8),
+                Text('2. Connect your phone to the device hotspot'),
+                SizedBox(height: 8),
+                Text('3. Enter your home WiFi credentials'),
+                SizedBox(height: 8),
+                Text('4. The device will attempt to connect'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

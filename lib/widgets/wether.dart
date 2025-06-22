@@ -33,22 +33,19 @@ class _ClimateState extends State<Climate> {
     }
   }
 
-   Future<void> _getUserName() async{
+  Future<void> _getUserName() async {
     try {
       final user = await Supabase.instance.client.auth.currentUser;
       final displayName = user?.userMetadata?['full_name'] ?? 'No name set';
       setState(() {
-          this.name = displayName;
+        this.name = displayName;
       });
     } catch (e) {
       setState(() {
         _errorMessage = '⚠️ Unable to load username.';
       });
     }
-
   }
-
-
 
   Future<void> _fetchWeather() async {
     setState(() {
@@ -84,7 +81,7 @@ class _ClimateState extends State<Climate> {
 
     return Container(
       width: double.infinity,
-      height: screenSize.height * 0.43,
+      height: screenSize.height * 0.5,
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
@@ -101,141 +98,153 @@ class _ClimateState extends State<Climate> {
           ),
         ],
       ),
-      child: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            )
-          : _weatherData != null
+      child:
+          _isLoading
+              ? const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              )
+              : _weatherData != null
               ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 60,),
-                    Text(
-                          'Hi ${name}',
-                              style: GoogleFonts.alef(
-                              fontSize: 25,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Stack(                         
-                            alignment: Alignment.center,
-                            children: [
-                              Image.asset(
-                                "assets/cloud.png",
-                                width: imageWidth,
-                                height: imageWidth + 20,
-                              ),
-                              Positioned(
-                                top: 10,
-                                child: Image.asset(
-                                  "assets/moon.png",
-                                  width: iconSize,
-                                  height: iconSize,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      '${_weatherData!['name']}, ${_weatherData!['sys']['country']}',
-                                      style: TextStyle(
-                                        fontSize: titleFontSize,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      '${_weatherData!['main']['temp'].toStringAsFixed(1)}°C',
-                                      style: GoogleFonts.antonio(
-                                        fontSize: tempFontSize,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w300,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    _weatherData!['weather'][0]['description']
-                                        .toString()
-                                        .toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: descFontSize,
-                                      color: Colors.white70,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                children: [
+                  SizedBox(height: 15),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: 10,
+                      left: 20,
+                      right: 20,
+                      bottom: 10,
+                    ),
+                    child: Text(
+                      'Hi ${name}',
+                      style: GoogleFonts.alef(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Divider(color: const Color.fromRGBO(255, 255, 255, 0.302), thickness: 1),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  ),
+                  Expanded(
+                    child: Row(
                       children: [
-                        _buildBottomIconText(
-                          icon: Icons.air,
-                          value: '${_weatherData!['wind']['speed']} km/h',
-                          label: 'Wind',
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.asset(
+                              "assets/cloud.png",
+                              width: imageWidth - 20,
+                              height: imageWidth - 20,
+                            ),
+                            Positioned(
+                              top: 10,
+                              child: Image.asset(
+                                "assets/moon.png",
+                                width: iconSize,
+                                height: iconSize,
+                              ),
+                            ),
+                          ],
                         ),
-                        _buildBottomIconText(
-                          icon: Icons.water_drop,
-                          value: '${_weatherData!['main']['humidity']}%',
-                          label: 'Humidity',
-                        ),
-                        _buildBottomIconText(
-                          icon: Icons.thermostat,
-                          value:
-                              '${_weatherData!['main']['feels_like'].toStringAsFixed(1)}°C',
-                          label: 'Feels Like',
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 1),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    '${_weatherData!['name']}, ${_weatherData!['sys']['country']}',
+                                    style: TextStyle(
+                                      fontSize: titleFontSize,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    '${_weatherData!['main']['temp'].toStringAsFixed(1)}°C',
+                                    style: GoogleFonts.antonio(
+                                      fontSize: tempFontSize,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w300,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  _weatherData!['weather'][0]['description']
+                                      .toString()
+                                      .toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: descFontSize,
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ],
-                )
+                  ),
+                  Divider(
+                    color: const Color.fromRGBO(255, 255, 255, 0.302),
+                    thickness: 1,
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildBottomIconText(
+                        icon: Icons.air,
+                        value: '${_weatherData!['wind']['speed']} km/h',
+                        label: 'Wind',
+                      ),
+                      _buildBottomIconText(
+                        icon: Icons.water_drop,
+                        value: '${_weatherData!['main']['humidity']}%',
+                        label: 'Humidity',
+                      ),
+                      _buildBottomIconText(
+                        icon: Icons.thermostat,
+                        value:
+                            '${_weatherData!['main']['feels_like'].toStringAsFixed(1)}°C',
+                        label: 'Feels Like',
+                      ),
+                    ],
+                  ),
+                ],
+              )
               : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _errorMessage,
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _errorMessage,
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 10),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white24,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: _fetchWeather,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text("Retry"),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white24,
+                      foregroundColor: Colors.white,
                     ),
-                  ],
-                ),
+                    onPressed: _fetchWeather,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text("Retry"),
+                  ),
+                ],
+              ),
     );
   }
 
@@ -258,10 +267,7 @@ class _ClimateState extends State<Climate> {
         ),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
       ],
     );
