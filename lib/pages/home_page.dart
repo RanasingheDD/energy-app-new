@@ -486,7 +486,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildAddButton() {
+  Widget _buildAddButton({required VoidCallback onCancel}) {
     // List of available device icons
     final List<IconData> deviceIcons = [
       Icons.lightbulb_outline, // Light
@@ -522,142 +522,148 @@ class _HomePageState extends State<HomePage> {
             ),
             child: StatefulBuilder(
               builder: (context, setState) {
-                return Column(
-                  children: [
-                    // Icon Selection Grid
-                    const Text(
-                      'Select Device Icon',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 150,
-                      child: GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 5,
-                              mainAxisSpacing: 8,
-                              crossAxisSpacing: 8,
-                            ),
-                        itemCount: deviceIcons.length,
-                        itemBuilder: (context, index) {
-                          final icon = deviceIcons[index];
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                selectedIcon = icon;
-                              });
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color:
-                                    selectedIcon == icon
-                                        ? Colors.deepPurpleAccent.withOpacity(
-                                          0.5,
-                                        )
-                                        : Colors.blueGrey[700],
-                                borderRadius: BorderRadius.circular(8),
+                return SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Icon Selection Grid
+                      const Text(
+                        'Select Device Icon',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 150,
+                        child: GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 5,
+                                mainAxisSpacing: 8,
+                                crossAxisSpacing: 8,
                               ),
-                              child: Icon(icon, color: Colors.white, size: 30),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Device Name Field
-                    TextField(
-                      controller: nameController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: 'Device Name',
-                        labelStyle: const TextStyle(color: Colors.white70),
-                        prefixIcon: Icon(selectedIcon, color: Colors.white70),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.blueGrey[600]!),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.blue),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Device ID Field
-                    TextField(
-                      controller: idController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: 'Device ID (XX:XX:XX:XX:XX:XX)',
-                        labelStyle: const TextStyle(color: Colors.white70),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.blueGrey[600]!),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.blue),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.info, size: 20),
-                          color: Colors.blueGrey[300],
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder:
-                                  (context) => AlertDialog(
-                                    title: const Text('Device ID Format'),
-                                    content: const Text(
-                                      'Please enter the device ID in correct format:\n\nXX:XX:XX:XX:XX:XX\n\nExample: 1A:2B:3C:4D:5E:6F',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        child: const Text('OK'),
-                                        onPressed: () => Navigator.pop(context),
-                                      ),
-                                    ],
-                                  ),
+                          itemCount: deviceIcons.length,
+                          itemBuilder: (context, index) {
+                            final icon = deviceIcons[index];
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedIcon = icon;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color:
+                                      selectedIcon == icon
+                                          ? Colors.deepPurpleAccent.withOpacity(
+                                            0.5,
+                                          )
+                                          : Colors.blueGrey[700],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  icon,
+                                  color: Colors.white,
+                                  size: 30,
+                                ),
+                              ),
                             );
                           },
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    // Action Buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              showInputFields = false;
-                              nameController.clear();
-                              idController.clear();
-                            });
-                          },
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(color: Colors.white70),
+                      // Device Name Field
+                      TextField(
+                        controller: nameController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Device Name',
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          prefixIcon: Icon(selectedIcon, color: Colors.white70),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Colors.blueGrey[600]!,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.blue),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () => _addDevice(selectedIcon),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurpleAccent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Device ID Field
+                      TextField(
+                        controller: idController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Device ID (XX:XX:XX:XX:XX:XX)',
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Colors.blueGrey[600]!,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.blue),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.info, size: 20),
+                            color: Colors.blueGrey[300],
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: const Text('Device ID Format'),
+                                      content: const Text(
+                                        'Please enter the device ID in correct format:\n\nXX:XX:XX:XX:XX:XX\n\nExample: 1A:2B:3C:4D:5E:6F',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          child: const Text('OK'),
+                                          onPressed:
+                                              () => Navigator.pop(context),
+                                        ),
+                                      ],
+                                    ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Action Buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: onCancel,
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(color: Colors.white70),
                             ),
                           ),
-                          child: const Text('Add Device'),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () => _addDevice(selectedIcon),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurpleAccent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Add Device'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -670,6 +676,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final power = context.watch<PowerProvider>().currentHomePower;
+    ScrollController _scrollController = ScrollController();
 
     return Scaffold(
       backgroundColor: _backgroundColor,
@@ -684,12 +691,12 @@ class _HomePageState extends State<HomePage> {
         child: RefreshIndicator(
           onRefresh: _refreshData,
           child: SingleChildScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildAppBar(context, screenSize),
-                if (showInputFields) ...[_buildAddButton()],
                 const SizedBox(height: 20),
                 Center(child: _buildEnergyUsageCard(screenSize, power ?? 0)),
                 if (_hasUpdate) ...[
@@ -700,8 +707,18 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 10),
                 ],
+                if (showInputFields)
+                  _buildAddButton(
+                    onCancel: () {
+                      setState(() {
+                        showInputFields = false;
+                        nameController.clear();
+                        idController.clear();
+                      });
+                    },
+                  ),
+                const SizedBox(height: 10),
                 _buildDeviceList(),
-
                 //_buildAddButton(),
               ],
             ),
@@ -709,21 +726,31 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        backgroundColor: Colors.deepPurpleAccent,
-        foregroundColor: Colors.white,
-        onPressed: () {
-          setState(() {
-            showInputFields = !showInputFields;
-            print(showInputFields);
-            if (!showInputFields) {
-              nameController.clear();
-              idController.clear();
-            }
-          });
-        },
-      ),
+      floatingActionButton:
+          showInputFields
+              ? null
+              : FloatingActionButton(
+                child: Icon(Icons.add),
+                backgroundColor: Colors.deepPurpleAccent,
+                foregroundColor: Colors.white,
+                onPressed: () {
+                  setState(() {
+                    showInputFields = true;
+                    print(showInputFields);
+                  });
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      if (_scrollController.hasClients) {
+                        _scrollController.animateTo(
+                          _scrollController.position.maxScrollExtent,
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    });
+                  });
+                },
+              ),
     );
   }
 }
