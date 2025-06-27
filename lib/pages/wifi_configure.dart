@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:myapp/widgets/snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/services.dart';
 
@@ -56,16 +57,13 @@ class _WifiConfigureState extends State<WifiConfigure> {
 
       if (response.statusCode == 200) {
         setState(() {
-          _message = 'WiFi credentials sent successfully!';
-          _messageColor = Colors.green;
+        showCustomSnackBarDone(context, "Wifi Configuration Succesfull !");
           _connectionSuccess = true;
         });
         _passwordController.clear();
       } else {
         setState(() {
-          _message =
-              'Failed to configure device (Error ${response.statusCode})';
-          _messageColor = Colors.orange;
+        showCustomSnackBarError(context, "Failed to configure device");
         });
       }
     } on http.ClientException catch (e) {
@@ -96,12 +94,15 @@ class _WifiConfigureState extends State<WifiConfigure> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+       backgroundColor: const Color.fromARGB(255, 21, 17, 37),
       appBar: AppBar(
         title: const Text("Configure Device WiFi"),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color.fromARGB(255, 21, 17, 37),
         actions: [
           IconButton(
-            icon: const Icon(Icons.help_outline),
+            icon: const Icon(Icons.help_outline,
+            color: Colors.blueAccent,
+            ),
             onPressed: () => _showHelpDialog(context),
           ),
         ],

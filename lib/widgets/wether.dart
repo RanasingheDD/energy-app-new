@@ -110,10 +110,10 @@ class _ClimateState extends State<Climate> {
                   SizedBox(height: 15),
                   Padding(
                     padding: EdgeInsets.only(
-                      top: 10,
-                      left: 20,
+                      top: 15,
+                      left: 50,
                       right: 20,
-                      bottom: 10,
+                      bottom: 15,
                     ),
                     child: Text(
                       'Hi ${name}',
@@ -159,8 +159,8 @@ class _ClimateState extends State<Climate> {
                                     '${_weatherData!['name']}, ${_weatherData!['sys']['country']}',
                                     style: TextStyle(
                                       fontSize: titleFontSize,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white70,
+                                      //fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:myapp/provider/power_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -34,7 +35,7 @@ class _DeviceCardState extends State<DeviceCard> {
   bool isLoading = true;
   int count = 0;
   final SupabaseClient supabase = Supabase.instance.client;
-
+ 
   // Threshold values (can be made configurable)
   static const double powerThresholdHigh = 3000.0; // 3kW
   static const double powerThresholdMedium = 2500.0; // 2.5kW
@@ -46,6 +47,11 @@ class _DeviceCardState extends State<DeviceCard> {
     _fetchDeviceStatus();
     _deviceCount();
   }
+
+int ico(Map<String, dynamic> device) {
+  return int.parse(device['icon_code']);  // parse decimal string to int
+}
+
 
   Future<void> _fetchDeviceStatus() async {
     try {
@@ -196,7 +202,14 @@ class _DeviceCardState extends State<DeviceCard> {
                   color: const Color.fromARGB(255, 0, 4, 66),
                   borderRadius: BorderRadius.circular(50),
                 ),
-                child: Icon(Icons.light, size: 40),
+                child: Icon(
+      IconData(
+        device['icon_code'],// Decimal value of the icon code (e.g., 0xE037)
+        fontFamily: 'FontAwesomeSolid', // Make sure this matches the actual font family used
+      ),
+      size: 30,
+      color: Colors.white,
+    ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

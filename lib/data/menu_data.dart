@@ -3,6 +3,7 @@ import 'package:myapp/models/menu_model.dart';
 import 'package:myapp/pages/analytics.dart';
 import 'package:myapp/pages/home_page.dart';
 import 'package:myapp/pages/settings_page.dart';
+import 'package:myapp/pages/table.dart';
 import 'package:myapp/report/fetch_report.dart';
 
 class SideMenuData {
@@ -11,8 +12,8 @@ class SideMenuData {
     MenuModel(
       icon: Icons.devices,
       title: 'Analytics',
-      page: const Devices()),
-    MenuModel(icon: Icons.receipt, title: 'History', page: ReportListPage()),
+      page:  SensorDataPage()),
+    //MenuModel(icon: Icons.receipt, title: 'History', page: ReportListPage()),
     MenuModel(
       icon: Icons.settings,
       title: 'Settings',

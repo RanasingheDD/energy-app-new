@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:myapp/controller/wetherAPI.dart';
 import 'package:myapp/pages/notification.dart';
 import 'package:myapp/provider/power_provider.dart';
@@ -73,7 +74,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _addDevice(IconData? icon) async {
     final name = nameController.text.trim();
     final id = idController.text.trim().toUpperCase();
-    final iconCode = icon?.codePoint ?? Icons.devices_other.codePoint;
+    final iconCode = icon?.codePoint ?? FontAwesomeIcons.lightbulb.codePoint;
+    print(iconCode);
 
     final macRegex = RegExp(r'^([0-9A-F]{2}:){5}[0-9A-F]{2}$');
 
@@ -254,34 +256,43 @@ class _HomePageState extends State<HomePage> {
               TextButton(
                 child: const Text(
                   'Save',
-                  style: TextStyle(color: Colors.green),
+                  style: TextStyle(color: Colors.deepPurpleAccent),
                 ),
                 onPressed: () async {
                   final newName = editController.text.trim();
                   if (newName.isNotEmpty) {
                     Navigator.pop(context); // Close the dialog immediately
+                    try{
                     await _saveDeviceName(index, newName);
+                    }catch(e){
+                      print(e);
+                    }finally{
+                      editController.dispose();
+                    }
                   }
                 },
               ),
             ],
           ),
-    );
-
-    editController.dispose();
+      );
   }
 
-  Future<void> _saveDeviceName(int index, String newName) async {
-    try {
-      await _supabase
-          .from('devices')
-          .update({'name': newName})
-          .eq('id', _devices[index]['id']);
-      setState(() => _devices[index]['name'] = newName);
-    } catch (e) {
-      _showErrorSnackbar('Failed to update device name: $e');
-    } finally {}
+Future<void> _saveDeviceName(int index, String newName) async {
+  try {
+    await _supabase
+        .from('devices')
+        .update({'name': newName})
+        .eq('id', _devices[index]['id']);
+
+    if (!mounted) return; // ✅ Prevent calling setState if widget is gone
+
+    setState(() => _devices[index]['name'] = newName);
+  } catch (e) {
+    if (!mounted) return;
+    _showErrorSnackbar('Failed to update device name: $e');
   }
+}
+
 
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(
@@ -308,7 +319,7 @@ class _HomePageState extends State<HomePage> {
           left: screenSize.width * 0.01,
           child: IconButton(
             onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            icon: const Icon(Icons.menu, color: Colors.white),
+            icon: const Icon(FontAwesomeIcons.list, color: Colors.white),
             splashRadius: 20,
           ),
         ),
@@ -329,7 +340,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
             icon: const Icon(
-              Icons.notification_add_outlined,
+              FontAwesomeIcons.solidBell,
               color: Colors.white,
             ),
             splashRadius: 20,
@@ -489,19 +500,16 @@ class _HomePageState extends State<HomePage> {
   Widget _buildAddButton({required VoidCallback onCancel}) {
     // List of available device icons
     final List<IconData> deviceIcons = [
-      Icons.lightbulb_outline, // Light
-      Icons.ac_unit, // AC
-      Icons.tv, // TV
-      Icons.mode_fan_off_outlined, // fan
-      Icons.kitchen, // Kitchen appliance
-      Icons.router, // Router
-      Icons.phone_android, // Smart device
-      Icons.computer, // computer
-      Icons.speaker, // Speaker
-      Icons.camera_alt, // Camera
+      FontAwesomeIcons.lightbulb, // Light
+      FontAwesomeIcons.snowflake, // AC
+      FontAwesomeIcons.tv, // TV
+      FontAwesomeIcons.fan, // fan
+      FontAwesomeIcons.wifi, // Router
+      FontAwesomeIcons.camera, // Camera
+      FontAwesomeIcons.kitchenSet, // Kitchen appliance
     ];
 
-    IconData? selectedIcon = Icons.devices_other; // Default icon
+    IconData? selectedIcon = FontAwesomeIcons.lightbulb; // Default icon
 
     return Column(
       children: [
