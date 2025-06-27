@@ -51,7 +51,7 @@ class SideMenuWidget extends StatelessWidget {
                     duration: const Duration(milliseconds: 300),
                     margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.blue : Colors.transparent,
+                      color: isSelected ? Colors.deepPurpleAccent.shade200 : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: ListTile(
