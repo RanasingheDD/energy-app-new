@@ -264,7 +264,6 @@ class _WifiConfigureState extends State<WifiConfigure> {
                 SizedBox(height: 8),
                 Text('3. Enter your home WiFi credentials'),
                 SizedBox(height: 8),
-                Text('4. The device will attempt to connect'),
               ],
             ),
             actions: [

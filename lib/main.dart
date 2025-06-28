@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:myapp/login/signup/register.dart';
 import 'package:myapp/provider/power_provider.dart';
@@ -6,9 +8,21 @@ import 'provider/ThemeProvider.dart';
 import 'provider/report_data_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'pages/home_page.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  /*await Firebase.initializeApp();
+  await FirebaseMessaging.instance.requestPermission(
+  alert: true,
+  badge: true,
+  sound: true,
+);
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);*/
   await Supabase.initialize(
     url: 'https://lofjpbnbmctceszsclzp.supabase.co',
     anonKey:

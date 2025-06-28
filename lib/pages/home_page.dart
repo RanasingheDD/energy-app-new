@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:myapp/controller/wetherAPI.dart';
@@ -43,7 +44,51 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _supabase.auth.onAuthStateChange.listen((event) async{
+      if(event.event==AuthChangeEvent.signedIn)
+        await FirebaseMessaging.instance.requestPermission();
+        await FirebaseMessaging.instance.getAPNSToken();
+        final token = await FirebaseMessaging.instance.getToken();
+        if(token !=null){
+          await _setFcmToken(token);
+        }
+    });
+    FirebaseMessaging.instance.onTokenRefresh.listen((token) async{
+      await _setFcmToken(token); 
+    });
+
+    FirebaseMessaging.onMessage.listen((payload){
+      final notification = payload.notification;
+        if(notification !=null){
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${notification.title} ${notification.body}')));
+        }
+
+    });
     _initializeData();
+
+  }
+
+
+  Future<void> _setFcmToken(String fcmToken) async{
+      final userId = await _supabase.auth.currentUser!.id;
+      await _supabase.from('profiles').upsert({'profile_id' : userId, 'fcm_token' : fcmToken});
+  }
+
+
+  void _showDialog(String? title, String? body) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title ?? 'Notification'),
+        content: Text(body ?? 'No message body'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _initializeData() async {
