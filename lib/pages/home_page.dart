@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -33,6 +35,8 @@ class _HomePageState extends State<HomePage> {
   final WeatherService _weatherService = WeatherService();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController idController = TextEditingController();
+  TimeOfDay? startTime;
+  TimeOfDay? endTime;
 
   List<Map<String, dynamic>> _devices = [];
   bool _isLoading = true;
@@ -44,50 +48,99 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _supabase.auth.onAuthStateChange.listen((event) async{
-      if(event.event==AuthChangeEvent.signedIn)
+    _startAutoToggleTimer();
+    _supabase.auth.onAuthStateChange.listen((event) async {
+      if (event.event == AuthChangeEvent.signedIn)
         await FirebaseMessaging.instance.requestPermission();
-        await FirebaseMessaging.instance.getAPNSToken();
-        final token = await FirebaseMessaging.instance.getToken();
-        if(token !=null){
-          await _setFcmToken(token);
-        }
+      await FirebaseMessaging.instance.getAPNSToken();
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await _setFcmToken(token);
+      }
     });
-    FirebaseMessaging.instance.onTokenRefresh.listen((token) async{
-      await _setFcmToken(token); 
+    FirebaseMessaging.instance.onTokenRefresh.listen((token) async {
+      await _setFcmToken(token);
     });
 
-    FirebaseMessaging.onMessage.listen((payload){
+    FirebaseMessaging.onMessage.listen((payload) {
       final notification = payload.notification;
-        if(notification !=null){
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${notification.title} ${notification.body}')));
-        }
-
+      if (notification != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${notification.title} ${notification.body}')),
+        );
+      }
     });
     _initializeData();
-
   }
 
-
-  Future<void> _setFcmToken(String fcmToken) async{
-      final userId = await _supabase.auth.currentUser!.id;
-      await _supabase.from('profiles').upsert({'profile_id' : userId, 'fcm_token' : fcmToken});
+  void _startAutoToggleTimer() {
+    Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkAndUpdateDeviceStates();
+    });
   }
 
+  Future<void> _checkAndUpdateDeviceStates() async {
+    final now = TimeOfDay.now();
+
+    for (int i = 0; i < _devices.length; i++) {
+      final device = _devices[i];
+      if (!(device['auto_mode'] ?? false)) continue;
+
+      final startStr = device['start_time'];
+      final endStr = device['end_time'];
+      if (startStr == null || endStr == null) continue;
+
+      final start = _parseTimeOfDay(startStr);
+      final end = _parseTimeOfDay(endStr);
+      final isOn = device['is_on'];
+
+      final shouldBeOn = _isWithinTimeRange(now, start, end);
+      if (shouldBeOn != isOn) {
+        await _togglePower(i); // Automatically toggles based on condition
+      }
+    }
+  }
+
+  TimeOfDay _parseTimeOfDay(String timeStr) {
+    final parts = timeStr.split(':');
+    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+  }
+
+  bool _isWithinTimeRange(TimeOfDay now, TimeOfDay start, TimeOfDay end) {
+    final nowMinutes = now.hour * 60 + now.minute;
+    final startMinutes = start.hour * 60 + start.minute;
+    final endMinutes = end.hour * 60 + end.minute;
+
+    if (startMinutes <= endMinutes) {
+      return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+    } else {
+      // Handles overnight schedules like 23:00–05:00
+      return nowMinutes >= startMinutes || nowMinutes < endMinutes;
+    }
+  }
+
+  Future<void> _setFcmToken(String fcmToken) async {
+    final userId = await _supabase.auth.currentUser!.id;
+    await _supabase.from('profiles').upsert({
+      'profile_id': userId,
+      'fcm_token': fcmToken,
+    });
+  }
 
   void _showDialog(String? title, String? body) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title ?? 'Notification'),
-        content: Text(body ?? 'No message body'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+      builder:
+          (context) => AlertDialog(
+            title: Text(title ?? 'Notification'),
+            content: Text(body ?? 'No message body'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -148,6 +201,9 @@ class _HomePageState extends State<HomePage> {
         'is_on': false,
         'user_id': userId,
         'icon_code': iconCode, // Store the icon code point
+        'start_time': startTime?.format(context),
+        'end_time': endTime?.format(context),
+        'auto_mode': true,
       };
 
       final insertedDevice =
@@ -307,11 +363,11 @@ class _HomePageState extends State<HomePage> {
                   final newName = editController.text.trim();
                   if (newName.isNotEmpty) {
                     Navigator.pop(context); // Close the dialog immediately
-                    try{
-                    await _saveDeviceName(index, newName);
-                    }catch(e){
+                    try {
+                      await _saveDeviceName(index, newName);
+                    } catch (e) {
                       print(e);
-                    }finally{
+                    } finally {
                       editController.dispose();
                     }
                   }
@@ -319,25 +375,24 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-      );
+    );
   }
 
-Future<void> _saveDeviceName(int index, String newName) async {
-  try {
-    await _supabase
-        .from('devices')
-        .update({'name': newName})
-        .eq('id', _devices[index]['id']);
+  Future<void> _saveDeviceName(int index, String newName) async {
+    try {
+      await _supabase
+          .from('devices')
+          .update({'name': newName})
+          .eq('id', _devices[index]['id']);
 
-    if (!mounted) return; // ✅ Prevent calling setState if widget is gone
+      if (!mounted) return; // ✅ Prevent calling setState if widget is gone
 
-    setState(() => _devices[index]['name'] = newName);
-  } catch (e) {
-    if (!mounted) return;
-    _showErrorSnackbar('Failed to update device name: $e');
+      setState(() => _devices[index]['name'] = newName);
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorSnackbar('Failed to update device name: $e');
+    }
   }
-}
-
 
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(
@@ -384,10 +439,7 @@ Future<void> _saveDeviceName(int index, String newName) async {
                         ),
                   ),
                 ),
-            icon: const Icon(
-              FontAwesomeIcons.solidBell,
-              color: Colors.white,
-            ),
+            icon: const Icon(FontAwesomeIcons.solidBell, color: Colors.white),
             splashRadius: 20,
           ),
         ),
@@ -690,7 +742,72 @@ Future<void> _saveDeviceName(int index, String newName) async {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      Text(
+                        'Timing Schedule',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
 
+                      const SizedBox(height: 10),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.access_time),
+                              label: Text(
+                                startTime == null
+                                    ? 'Start Time'
+                                    : startTime!.format(context),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blueGrey[700],
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay.now(),
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    startTime = picked;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.access_time),
+                              label: Text(
+                                endTime == null
+                                    ? 'End Time'
+                                    : endTime!.format(context),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blueGrey[700],
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay.now(),
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    endTime = picked;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                       // Action Buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -767,6 +884,8 @@ Future<void> _saveDeviceName(int index, String newName) async {
                         showInputFields = false;
                         nameController.clear();
                         idController.clear();
+                        startTime = null;
+                        endTime = null;
                       });
                     },
                   ),
