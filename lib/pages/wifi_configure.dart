@@ -57,13 +57,13 @@ class _WifiConfigureState extends State<WifiConfigure> {
 
       if (response.statusCode == 200) {
         setState(() {
-        showCustomSnackBarDone(context, "Wifi Configuration Succesfull !");
+          showCustomSnackBarDone(context, "Wifi Configuration Succesfull !");
           _connectionSuccess = true;
         });
         _passwordController.clear();
       } else {
         setState(() {
-        showCustomSnackBarError(context, "Failed to configure device");
+          showCustomSnackBarError(context, "Failed to configure device");
         });
       }
     } on http.ClientException catch (e) {
@@ -94,15 +94,13 @@ class _WifiConfigureState extends State<WifiConfigure> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-       backgroundColor: const Color.fromARGB(255, 21, 17, 37),
+      backgroundColor: const Color.fromARGB(255, 21, 17, 37),
       appBar: AppBar(
         title: const Text("Configure Device WiFi"),
         backgroundColor: const Color.fromARGB(255, 21, 17, 37),
         actions: [
           IconButton(
-            icon: const Icon(Icons.help_outline,
-            color: Colors.blueAccent,
-            ),
+            icon: const Icon(Icons.help_outline, color: Colors.blueAccent),
             onPressed: () => _showHelpDialog(context),
           ),
         ],
@@ -230,17 +228,17 @@ class _WifiConfigureState extends State<WifiConfigure> {
                   ),
                 ),
               const SizedBox(height: 20),
-              if (_connectionSuccess)
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Done'),
-                ),
+              // if (_connectionSuccess)
+              //   OutlinedButton(
+              //     onPressed: () => Navigator.pop(context, true),
+              //     style: OutlinedButton.styleFrom(
+              //       padding: const EdgeInsets.symmetric(vertical: 16),
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.circular(8),
+              //       ),
+              //     ),
+              //     child: const Text('Done'),
+              //   ),
             ],
           ),
         ),

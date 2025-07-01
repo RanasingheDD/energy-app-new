@@ -44,6 +44,7 @@ class _HomePageState extends State<HomePage> {
   String _version = "";
   double _currentHomePower = 0.0;
   bool showInputFields = false;
+  double _currentHomeBill = 0.0;
 
   @override
   void initState() {
@@ -84,19 +85,23 @@ class _HomePageState extends State<HomePage> {
 
     for (int i = 0; i < _devices.length; i++) {
       final device = _devices[i];
-      if (!(device['auto_mode'] ?? false)) continue;
-
+      // Allow both manual and auto modes to use scheduling
+      final isAutoMode = device['auto_mode'] ?? false;
       final startStr = device['start_time'];
       final endStr = device['end_time'];
       if (startStr == null || endStr == null) continue;
 
       final start = _parseTimeOfDay(startStr);
       final end = _parseTimeOfDay(endStr);
+      final now = TimeOfDay.now();
       final isOn = device['is_on'];
 
       final shouldBeOn = _isWithinTimeRange(now, start, end);
       if (shouldBeOn != isOn) {
-        await _togglePower(i); // Automatically toggles based on condition
+        // Only auto-toggle if manual mode AND scheduling is defined
+        if (!isAutoMode) {
+          await _togglePower(i);
+        }
       }
     }
   }
@@ -151,6 +156,7 @@ class _HomePageState extends State<HomePage> {
       _weatherService.fetchWeatherByLocation(),
     ]);
     _listenToDeviceChanges();
+    _getElectricityBill();
   }
 
   void _listenToDeviceChanges() {
@@ -294,6 +300,28 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _getElectricityBill() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final response = await _supabase
+          .from('Bill')
+          .select('price')
+          .eq('user_id', userId);
+
+      print(response);
+
+      if (response.isNotEmpty && response[0]['price'] != null) {
+        setState(() => _currentHomeBill = response[0]['price'].toDouble());
+      } else {
+        setState(() => _currentHomeBill = 0.0);
+      }
+    } catch (e) {
+      _showErrorSnackbar('Failed to fetch electricity bill: $e');
+    }
+  }
+
   Future<void> _updateDeviceMode(int index, bool isAutoMode) async {
     try {
       await _supabase
@@ -346,6 +374,7 @@ class _HomePageState extends State<HomePage> {
                 hintStyle: TextStyle(color: Colors.white54),
               ),
             ),
+
             actions: [
               TextButton(
                 child: const Text(
@@ -449,9 +478,9 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildEnergyUsageCard(Size screenSize, double power) {
     return Container(
-      width: screenSize.width * 0.9,
+      width: screenSize.width * 0.95,
       height: 67,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
         color: _energyCardColor,
         borderRadius: BorderRadius.circular(35),
@@ -501,15 +530,15 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "${(power).toString()} W",
+                "${(power / 60000).toString()} Kwh",
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
               ),
-              const Text(
-                'Per Day',
+              Text(
+                'Rs. ${_currentHomeBill.toStringAsFixed(2)}',
                 style: TextStyle(color: Colors.white54, fontSize: 13),
               ),
             ],
@@ -588,6 +617,14 @@ class _HomePageState extends State<HomePage> {
                 currentHomePower: _currentHomePower,
                 onModeChange: _updateDeviceMode,
                 onPriorityChange: _updateDevicePriority,
+                onScheduleChange: (index, start, end) async {
+                  final deviceId = _devices[index]['id'];
+                  await Supabase.instance.client
+                      .from('devices')
+                      .update({'start_time': start, 'end_time': end})
+                      .eq('id', deviceId);
+                  // Optional: Refresh UI or re-fetch data if needed
+                },
               ),
             );
           }).toList(),
@@ -741,74 +778,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Timing Schedule',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
                       const SizedBox(height: 10),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              icon: const Icon(Icons.access_time),
-                              label: Text(
-                                startTime == null
-                                    ? 'Start Time'
-                                    : startTime!.format(context),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blueGrey[700],
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: () async {
-                                final picked = await showTimePicker(
-                                  context: context,
-                                  initialTime: TimeOfDay.now(),
-                                );
-                                if (picked != null) {
-                                  setState(() {
-                                    startTime = picked;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              icon: const Icon(Icons.access_time),
-                              label: Text(
-                                endTime == null
-                                    ? 'End Time'
-                                    : endTime!.format(context),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blueGrey[700],
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: () async {
-                                final picked = await showTimePicker(
-                                  context: context,
-                                  initialTime: TimeOfDay.now(),
-                                );
-                                if (picked != null) {
-                                  setState(() {
-                                    endTime = picked;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Action Buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -840,6 +810,28 @@ class _HomePageState extends State<HomePage> {
           ),
       ],
     );
+  }
+
+  Future<void> _saveStartTime(int index, String time) async {
+    final device = _devices[index];
+    await _supabase
+        .from('devices')
+        .update({'start_time': time})
+        .eq('id', device['id']);
+    setState(() {
+      _devices[index]['start_time'] = time;
+    });
+  }
+
+  Future<void> _saveEndTime(int index, String time) async {
+    final device = _devices[index];
+    await _supabase
+        .from('devices')
+        .update({'end_time': time})
+        .eq('id', device['id']);
+    setState(() {
+      _devices[index]['end_time'] = time;
+    });
   }
 
   @override

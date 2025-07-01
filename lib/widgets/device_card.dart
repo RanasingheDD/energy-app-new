@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:myapp/provider/power_provider.dart';
@@ -13,6 +15,7 @@ class DeviceCard extends StatefulWidget {
   final Function(int, String) onPriorityChange;
   final Function(int, bool) onModeChange;
   final double currentHomePower; // Current total home power consumption
+  final Function(int index, String startTime, String endTime) onScheduleChange;
 
   const DeviceCard({
     super.key,
@@ -24,6 +27,7 @@ class DeviceCard extends StatefulWidget {
     required this.onPriorityChange,
     required this.onModeChange,
     required this.currentHomePower,
+    required this.onScheduleChange,
   });
 
   @override
@@ -34,8 +38,12 @@ class _DeviceCardState extends State<DeviceCard> {
   bool isOn = false;
   bool isLoading = true;
   int count = 0;
+  bool showTiming = false;
+  String? startTime;
+  String? endTime;
   final SupabaseClient supabase = Supabase.instance.client;
- 
+  Timer? _timeChecker;
+
   // Threshold values (can be made configurable)
   static const double powerThresholdHigh = 3000.0; // 3kW
   static const double powerThresholdMedium = 2500.0; // 2.5kW
@@ -46,12 +54,21 @@ class _DeviceCardState extends State<DeviceCard> {
     super.initState();
     _fetchDeviceStatus();
     _deviceCount();
+    startTime = widget.device['start_time'];
+    endTime = widget.device['end_time'];
+
+    _startTimingScheduler();
   }
 
-int ico(Map<String, dynamic> device) {
-  return int.parse(device['icon_code']);  // parse decimal string to int
-}
+  @override
+  void dispose() {
+    _timeChecker?.cancel();
+    super.dispose();
+  }
 
+  int ico(Map<String, dynamic> device) {
+    return int.parse(device['icon_code']); // parse decimal string to int
+  }
 
   Future<void> _fetchDeviceStatus() async {
     try {
@@ -131,6 +148,22 @@ int ico(Map<String, dynamic> device) {
     }
   }
 
+  void _startTimingScheduler() {
+    _timeChecker = Timer.periodic(const Duration(minutes: 1), (_) {
+      final now = TimeOfDay.now().format(context);
+
+      if (!widget.device['auto_mode']) {
+        if (startTime != null && now == startTime && !widget.device['is_on']) {
+          widget.onToggle(widget.index); // Turn ON
+        } else if (endTime != null &&
+            now == endTime &&
+            widget.device['is_on']) {
+          widget.onToggle(widget.index); // Turn OFF
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -144,7 +177,7 @@ int ico(Map<String, dynamic> device) {
 
     return Container(
       width: screenSize.width * 0.95,
-      height: screenSize.height * 0.34, // Increased height for new controls
+      height: screenSize.height * 0.39, // Increased height for new controls
       padding: const EdgeInsets.only(top: 18, bottom: 5),
       decoration: BoxDecoration(
         color: const Color(0xFF182C36),
@@ -203,13 +236,14 @@ int ico(Map<String, dynamic> device) {
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: Icon(
-      IconData(
-        device['icon_code'],// Decimal value of the icon code (e.g., 0xE037)
-        fontFamily: 'FontAwesomeSolid', // Make sure this matches the actual font family used
-      ),
-      size: 30,
-      color: Colors.white,
-    ),
+                  IconData(
+                    device['icon_code'], // Decimal value of the icon code (e.g., 0xE037)
+                    fontFamily:
+                        'FontAwesomeSolid', // Make sure this matches the actual font family used
+                  ),
+                  size: 30,
+                  color: Colors.white,
+                ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +355,10 @@ int ico(Map<String, dynamic> device) {
                   ),
                   const SizedBox(width: 8),
                   DropdownButton<String>(
-                    value: device['priority'] ?? 'medium',
+                    value:
+                        ['high', 'medium', 'low'].contains(device['priority'])
+                            ? device['priority']
+                            : 'medium', // avoid invalid values
                     dropdownColor: const Color(0xFF204952),
                     style: const TextStyle(color: Colors.white),
                     items:
@@ -329,7 +366,8 @@ int ico(Map<String, dynamic> device) {
                           return DropdownMenuItem<String>(
                             value: value,
                             child: Text(
-                              value[0].toUpperCase() + value.substring(1),
+                              value[0].toUpperCase() +
+                                  value.substring(1), // High, Medium, Low
                               style: const TextStyle(color: Colors.white),
                             ),
                           );
@@ -340,6 +378,97 @@ int ico(Map<String, dynamic> device) {
                       }
                     },
                   ),
+                  const SizedBox(width: 64),
+                ],
+              ),
+            ),
+          if (!device['auto_mode']) // Show only in manual mode
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.schedule),
+                    label: const Text(
+                      'Timing Schedule',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF139790),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        showTiming = !showTiming;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  if (showTiming)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.access_time),
+                            label: Text(
+                              startTime != null ? startTime! : 'Start Time',
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF139790),
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: TimeOfDay.now(),
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  startTime = picked.format(context);
+                                });
+                                widget.onScheduleChange(
+                                  index,
+                                  startTime!,
+                                  endTime ??
+                                      '', // Use a separate handler if needed
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.access_time),
+                            label: Text(
+                              endTime != null ? endTime! : 'End Time',
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF139790),
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: TimeOfDay.now(),
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  endTime = picked.format(context);
+                                });
+                                widget.onScheduleChange(
+                                  widget.index,
+                                  startTime ?? '',
+                                  endTime!,
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
