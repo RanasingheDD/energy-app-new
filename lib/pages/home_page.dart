@@ -174,6 +174,25 @@ class _HomePageState extends State<HomePage> {
         )
         .subscribe();
   }
+  void _listenToDeviceChanges(String userId) {
+      _supabase
+          .channel('public:SensorData')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'SensorData',
+            callback: (payload) {
+              final newRecord = payload.newRecord;
+  
+              if (newRecord != null && newRecord['user_id'] == userId) {
+                final currentPower = newRecord['power'];
+                print('Power1: $currentPower');
+                context.read<PowerProvider>().setPower(currentPower);
+              }
+            },
+          )
+          .subscribe();
+    }
 
   Future<void> _addDevice(IconData? icon) async {
     final name = nameController.text.trim();
