@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:myapp/login/signup/register.dart';
 import 'package:myapp/pages/wifi_configure.dart';
 import 'package:myapp/provider/ThemeProvider.dart';
-import 'package:myapp/widgets/snackbar.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../widgets/menu.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -99,9 +97,6 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       child: IconButton(
                         onPressed: () {
-                          //final Uri url = Uri.parse('http://192.168.4.1');
-                          //await launchUrl(url, mode: LaunchMode.externalApplication);
-                          // sendWifiCredentials("HONOR X6b", "00000001");
                           Navigator.push<bool>(
                             context,
                             MaterialPageRoute(
@@ -117,7 +112,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         },
                         icon: Icon(
                           Icons.wifi_outlined,
-                          color: wifiConnected ? Colors.green : Colors.white,
+                          //color: wifiConnected ? Colors.green : Colors.white,
                           size: 30,
                         ),
                       ),
@@ -151,27 +146,45 @@ class _SettingsPageState extends State<SettingsPage> {
                                 : Colors.black.withOpacity(0.2),
                       ),
                       child: IconButton(
-                        onPressed: () async {
-                          await Supabase.instance.client.auth.signOut();
-                          if (context.mounted) {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AuthPage(),
+                          onPressed: () async {
+                            final shouldLogout = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Confirm Logout'),
+                                content: const Text('Are you sure you want to logout?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text('Logout'),
+                                  ),
+                                ],
                               ),
-                              (route) => false,
                             );
-                          }
-                        },
-                        icon: Icon(
-                          Icons.logout_outlined,
-                          color:
-                              themeProvider.isDarkMode
-                                  ? Colors.white
-                                  : Colors.black,
-                          size: 30,
-                        ),
-                      ),
+
+                            if (shouldLogout == true) {
+                              await Supabase.instance.client.auth.signOut();
+                              if (context.mounted) {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const AuthPage(),
+                                  ),
+                                  (route) => false,
+                                );
+                              }
+                            }
+                          },
+                          icon: Icon(
+                            Icons.logout_outlined,
+                            color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                            size: 30,
+                          ),
+                        )
+
                     ),
                   ),
                 ],
@@ -184,34 +197,6 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSwitchTile({
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            color:
-                Provider.of<ThemeProvider>(context).isDarkMode
-                    ? Colors.white
-                    : Colors.black,
-            fontSize: 16,
-          ),
-        ),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeColor: Colors.white,
-          activeTrackColor: Colors.grey,
-        ),
-      ],
     );
   }
 

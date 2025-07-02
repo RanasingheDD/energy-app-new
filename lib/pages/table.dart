@@ -407,11 +407,20 @@ class _SensorDataPageState extends State<SensorDataPage> {
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
+                  child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.deepPurpleAccent.shade400, Colors.deepPurple],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: ElevatedButton(
                     onPressed: fetchSensorData,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal.shade700,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -426,8 +435,13 @@ class _SensorDataPageState extends State<SensorDataPage> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Search Data'),
+                        : const Text(
+                            'Search Data',
+                            style: TextStyle(color: Colors.white),
+                          ),
                   ),
+                )
+
                 ),
               ],
             ),

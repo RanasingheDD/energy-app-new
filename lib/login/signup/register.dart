@@ -381,7 +381,7 @@ class _AuthPageState extends State<AuthPage> {
                         height: 50,
                         child: OutlinedButton.icon(
                           icon: Image.asset(
-                            'assets/images/google.png',
+                            'assets/google.png',
                             height: 24,
                             width: 24,
                           ),
